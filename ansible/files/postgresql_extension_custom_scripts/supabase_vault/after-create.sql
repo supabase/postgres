@@ -1,9 +1,11 @@
 do $$
 declare
-  extversion text := (select extversion from pg_extension where extname = 'supabase_vault');
-  search_path text := (select current_setting('search_path'));
+  saved_search_path pg_catalog.text := (select pg_catalog.current_setting('search_path'));
+  extversion pg_catalog.text;
 begin
-  perform set_config('search_path', '', true);
+  perform pg_catalog.set_config('search_path', 'pg_catalog, pg_temp', true);
+
+  select e.extversion into extversion from pg_extension e where e.extname = 'supabase_vault';
 
   if extversion != '0.2.8' then
     grant usage on schema vault to postgres with grant option;
@@ -16,6 +18,5 @@ begin
     grant execute on function vault.create_secret, vault.update_secret, vault._crypto_aead_det_decrypt to service_role;
   end if;
 
-  -- restore configs
-  perform set_config('search_path', search_path, true);
+  perform pg_catalog.set_config('search_path', saved_search_path, true);
 end $$;

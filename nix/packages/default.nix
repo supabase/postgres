@@ -1,11 +1,12 @@
 { self, inputs, ... }:
 {
   imports = [
-    ./postgres.nix
+    ./extension-catalog.nix
+    ./images.nix
     ./postgres-env.nix
+    ./postgres.nix
     ./site-env.nix
   ];
-
   perSystem =
     {
       inputs',
@@ -42,17 +43,45 @@
         psql_15 = self'.packages."psql_15/bin";
         psql_17 = self'.packages."psql_17/bin";
         psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
+        inherit (self'.packages) supabase-groonga;
         inherit (self.supabase) defaults;
       };
+      # one port each so the schema checks can also run side by side outside the linux sandbox
+      schemaPorts = {
+        "15" = "5550";
+        "17" = "5551";
+        "orioledb-17" = "5552";
+      };
+      makeSchemaDump =
+        version:
+        pkgs.callPackage ./schema-dump {
+          inherit (self.supabase) defaults;
+          inherit version;
+          port = schemaPorts.${version};
+          postgresql = self'.packages."psql_${version}/bin";
+          startServer = pkgs-lib.makePostgresDevSetup {
+            inherit pkgs;
+            name = "start-postgres-server-schema-${version}";
+            pgroonga = self'.legacyPackages."psql_${version}".exts.pgroonga;
+            extraSubstitutions = {
+              PGSODIUM_GETKEY = "${self'.packages.getkey-script}/bin/pgsodium-getkey";
+              PGSQL_DEFAULT_PORT = schemaPorts.${version};
+            };
+          };
+        };
+      makeSchemaCheck =
+        version:
+        pkgs.callPackage ./schema-check {
+          inherit version;
+          schemaDump = self'.packages."schema-dump-${version}";
+        };
     in
     {
       packages = (
         {
-          build-ami = pkgs.callPackage ./build-ami.nix { packer = self'.packages.packer; };
-          build-qemu-image = pkgs.callPackage ./build-qemu-image { packer = self'.packages.packer; };
-          build-test-ami = pkgs.callPackage ./build-test-ami.nix { packer = self'.packages.packer; };
           cleanup-ami = pkgs.callPackage ./cleanup-ami.nix { };
-          dbmate-tool = pkgs.callPackage ./dbmate-tool.nix { inherit (self.supabase) defaults; };
+          getkey-script = pkgs.callPackage ./getkey-script { };
+          dbmate-tool = pkgs.callPackage ./dbmate-tool { };
           docker-image-inputs = pkgs.callPackage ./docker-image-inputs.nix {
             psql_15_slim = self'.packages."psql_15_slim/bin";
             psql_17_slim = self'.packages."psql_17_slim/bin";
@@ -65,7 +94,9 @@
             nix-eval-jobs = inputs'.nix-eval-jobs.packages.default;
           };
           gatekeeper = pkgs.callPackage ./gatekeeper.nix { inherit inputs pkgs; };
-          supabase-groonga = pkgs.callPackage ../ext/pgroonga/groonga.nix { };
+          supabase-groonga = pkgs.callPackage ../ext/pgroonga/groonga.nix {
+            inherit (self'.packages) mecab-naist-jdic;
+          };
           http-mock-server = pkgs.callPackage ./http-mock-server.nix { };
           image-size-analyzer = pkgs.callPackage ./image-size-analyzer.nix { };
           local-infra-bootstrap = pkgs.callPackage ./local-infra-bootstrap.nix { };
@@ -74,7 +105,7 @@
           overlayfs-on-package = pkgs.callPackage ./overlayfs-on-package.nix { };
           packer = pkgs.callPackage ./packer.nix { inherit inputs; };
           pg-activity = inputs.nixpkgs.legacyPackages.${pkgs.stdenv.hostPlatform.system}.pg_activity;
-          pg-backrest = inputs.nixpkgs.legacyPackages.${pkgs.stdenv.hostPlatform.system}.pgbackrest;
+          pg-backrest = pkgs.callPackage ./pg-backrest.nix { };
           pgctld = pkgs.callPackage ./pgctld.nix {
             multigres-src = inputs.multigres;
           };
@@ -83,6 +114,12 @@
           pg_regress = makePgRegress activeVersion;
           pg_isolation_regress = makePgIsolationRegress activeVersion;
           run-testinfra = pkgs.callPackage ./run-testinfra.nix { };
+          schema-check-15 = makeSchemaCheck "15";
+          schema-check-17 = makeSchemaCheck "17";
+          schema-check-orioledb-17 = makeSchemaCheck "orioledb-17";
+          schema-dump-15 = makeSchemaDump "15";
+          schema-dump-17 = makeSchemaDump "17";
+          schema-dump-orioledb-17 = makeSchemaDump "orioledb-17";
           show-commands = pkgs.callPackage ./show-commands.nix { };
           start-client = pkgs.callPackage ./start-client.nix {
             psql_15 = self'.packages."psql_15/bin";
@@ -106,6 +143,7 @@
             inherit (self'.packages) overlayfs-on-package;
           };
           sync-exts-versions = pkgs.callPackage ./sync-exts-versions.nix { inherit (inputs') nix-editor; };
+          check-ext-versions = pkgs.callPackage ./check-ext-versions { };
           trigger-nix-build = pkgs.callPackage ./trigger-nix-build.nix { };
           update-readme = pkgs.callPackage ./update-readme.nix { };
           supabase-cli = pkgs.callPackage ./supabase-cli.nix { };
@@ -123,12 +161,6 @@
           inherit (pkgs.callPackage ./wal-g.nix { }) wal-g-2 wal-g-3;
           inherit (supascan-pkgs) goss supascan supascan-specs;
           inherit (pg-startup-profiler-pkgs) pg-startup-profiler;
-          inherit (pkgs.cargo-pgrx)
-            cargo-pgrx_0_11_3
-            cargo-pgrx_0_12_6
-            cargo-pgrx_0_12_9
-            cargo-pgrx_0_14_3
-            ;
         }
         // lib.optionalAttrs pkgs.stdenv.isDarwin {
           setup-darwin-linux-builder = pkgs.callPackage ./setup-darwin-linux-builder.nix {

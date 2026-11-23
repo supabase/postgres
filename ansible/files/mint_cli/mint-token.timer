@@ -1,0 +1,10 @@
+[Unit]
+Description=Refresh the MINT token well inside its 1800s TTL
+
+[Timer]
+OnBootSec=1min
+OnUnitActiveSec=20min
+RandomizedDelaySec=5min
+
+[Install]
+WantedBy=timers.target

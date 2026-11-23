@@ -23,14 +23,14 @@ jobs:
       base_hash: ${{ steps.check.outputs.base_hash }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@v7.0.1
 
       - name: Install nix
-        uses: ./.github/actions/nix-install-ephemeral
+        uses: $/.github/actions/install-nix
 
       - name: Check Docker image changes
         id: check
-        uses: ./.github/actions/check-docker-image-changes
+        uses: $/.github/actions/check-docker-image-changes
         with:
           event_name: ${{ github.event_name }}
           base_ref: ${{ github.base_ref }}
@@ -44,19 +44,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pg_version: ['15', '17']
+        pg_version: ["15", "17"]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@v7.0.1
 
       - name: Install nix
-        uses: ./.github/actions/nix-install-ephemeral
+        uses: $/.github/actions/install-nix
 
       - name: Create Docker context
         run: docker context create builders
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+        uses: docker/setup-buildx-action@v4.4.1
         with:
           endpoint: builders
 
@@ -70,14 +70,14 @@ jobs:
       - name: Run CLI smoke test
         run: |
           echo "Running CLI smoke test for PostgreSQL ${{ matrix.pg_version }}..."
-          nix run --accept-flake-config .#cli-smoke-test -- --no-build ${{ matrix.pg_version }}
+          nix run .#cli-smoke-test -- --no-build ${{ matrix.pg_version }}
         timeout-minutes: 10
 
       - name: Show logs on failure
         if: failure()
         run: |
           echo "=== Supabase Status ==="
-          nix run --accept-flake-config .#supabase-cli -- status || true
+          nix run .#supabase-cli -- status || true
 
           echo "=== Docker containers ==="
           docker ps -a
@@ -88,13 +88,13 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          nix run --accept-flake-config .#supabase-cli -- stop --no-backup || true
+          nix run .#supabase-cli -- stop --no-backup || true
 
   skip-notification:
     name: CLI Smoke Test (Skipped)
     needs: check-changes
     if: needs.check-changes.outputs.should_run == 'false'
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - name: Report skipped
         run: |

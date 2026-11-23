@@ -1,8 +1,8 @@
 - name: UFW - Allow connections to GoTrue metrics exporter
   community.general.ufw:
-    port: '9122'
-    rule: 'allow'
-    
+    port: "9122"
+    rule: "allow"
+
 # use this user for the Gotrue build and for running the service
 - name: Gotrue - group
   ansible.builtin.group:
@@ -13,7 +13,7 @@
 - name: Gotrue - system user
   ansible.builtin.user:
     name: gotrue
-    uid: 1001
+    uid: "{{ uids.gotrue }}"
     group: gotrue
     state: present
 
@@ -21,7 +21,7 @@
   ansible.builtin.get_url:
     url: "{{ gotrue_artifacts[platform]['url'] }}"
     checksum: "{{ gotrue_artifacts[platform]['checksum'] }}"
-    dest: '/tmp/gotrue.tar.gz'
+    dest: "/tmp/gotrue.tar.gz"
   register: download_result
   until: download_result is succeeded
   retries: 3
@@ -29,22 +29,30 @@
 
 - name: gotrue - create /opt/gotrue and /etc/auth.d
   ansible.builtin.file:
-    mode: '0775'
-    owner: 'gotrue'
+    mode: "0775"
+    owner: "gotrue"
     path: "{{ gotrue_dir_item }}"
-    state: 'directory'
+    state: "directory"
   loop:
-    - '/etc/auth.d'
-    - '/opt/gotrue'
+    - "/etc/auth.d"
+    - "/opt/gotrue"
   loop_control:
-    loop_var: 'gotrue_dir_item'
+    loop_var: "gotrue_dir_item"
 
 - name: gotrue - unpack archive in /opt/gotrue
   ansible.builtin.unarchive:
-    dest: '/opt/gotrue'
-    owner: 'gotrue'
+    dest: "/opt/gotrue"
+    owner: "gotrue"
     remote_src: true
-    src: '/tmp/gotrue.tar.gz'
+    src: "/tmp/gotrue.tar.gz"
+
+- name: gotrue - install platform env file
+  ansible.builtin.copy:
+    src: "files/auth.d/80_platform.env"
+    dest: "/etc/auth.d/80_platform.env"
+    owner: root
+    group: root
+    mode: "0644"
 
 # libpq is a C library that enables user programs to communicate with
 # the PostgreSQL database server.
@@ -55,13 +63,13 @@
 
 - name: gotrue - create service file
   ansible.builtin.template:
-    dest: '/etc/systemd/system/gotrue.service'
-    src: 'files/gotrue.service.j2'
+    dest: "/etc/systemd/system/gotrue.service"
+    src: "files/gotrue.service.j2"
 
 - name: gotrue - create optimizations file
   ansible.builtin.template:
-    dest: '/etc/systemd/system/gotrue-optimizations.service'
-    src: 'files/gotrue-optimizations.service.j2'
+    dest: "/etc/systemd/system/gotrue-optimizations.service"
+    src: "files/gotrue-optimizations.service.j2"
 
 - name: gotrue - reload systemd
   ansible.builtin.systemd_service:

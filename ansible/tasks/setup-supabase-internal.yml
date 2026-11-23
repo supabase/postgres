@@ -14,15 +14,16 @@
   register: vector_download
   until: vector_download is success
 
-- name: install Vector for logging
-  apt:
-    deb: /tmp/vector.deb
-  become: true
-
+# Pin the vector group/user before installing the package: its postinst
+# creates them with a dynamically-assigned system gid/uid (whatever is next
+# free at that point), which is not reproducible across AMI variants that
+# install a different set of packages before this point - it has collided
+# with this pinned gid (989) after the systemd-coredump package install
+# (setup-postgres.yml) shifted the "next free system gid" ahead of it.
 - name: add vector system group
   ansible.builtin.group:
     name: vector
-    gid: 989
+    gid: "{{ gids.vector }}"
     system: yes
 
 - name: add vector system user
@@ -32,25 +33,33 @@
     group: vector
     groups: postgres
     append: yes
+    create_home: false
+    home: /var/lib/vector
+    system: yes
+
+- name: install Vector for logging
+  apt:
+    deb: /tmp/vector.deb
+  become: true
 
 - name: create service files for Vector
   ansible.builtin.template:
-    src: 'files/vector.service.j2'
-    dest: '/etc/systemd/system/vector.service'
+    src: "files/vector.service.j2"
+    dest: "/etc/systemd/system/vector.service"
 
 - name: configure tmpfiles for postgres - overwrites upstream package
   ansible.builtin.template:
-    src: 'files/postgresql_config/tmpfiles.postgresql.conf'
-    dest: '/etc/tmpfiles.d/postgresql-common.conf'
+    src: "files/postgresql_config/tmpfiles.postgresql.conf"
+    dest: "/etc/tmpfiles.d/postgresql-common.conf"
 
 - name: fix permissions for vector config to be managed
   ansible.builtin.file:
-    group: 'vector'
-    mode: '0775'
-    owner: 'vector'
-    path: '/etc/vector'
+    group: "vector"
+    mode: "0775"
+    owner: "vector"
+    path: "/etc/vector"
     recurse: true
-    state: 'directory'
+    state: "directory"
 
 - name: vector - reload systemd
   ansible.builtin.systemd_service:
@@ -58,21 +67,21 @@
 
 - name: Create checkpoints dir
   ansible.builtin.file:
-    owner: 'vector'
-    path: '/var/lib/vector'
-    state: 'directory'
+    owner: "vector"
+    path: "/var/lib/vector"
+    state: "directory"
   become: true
 
 - name: Include file for generated optimizations in postgresql.conf
   ansible.builtin.replace:
-    path: '/etc/postgresql/postgresql.conf'
+    path: "/etc/postgresql/postgresql.conf"
     regexp: "#include = '/etc/postgresql-custom/generated-optimizations.conf'"
     replace: "include = '/etc/postgresql-custom/generated-optimizations.conf'"
   become: true
 
 - name: Include file for custom overrides in postgresql.conf
   ansible.builtin.replace:
-    path: '/etc/postgresql/postgresql.conf'
+    path: "/etc/postgresql/postgresql.conf"
     regexp: "#include = '/etc/postgresql-custom/custom-overrides.conf'"
     replace: "include = '/etc/postgresql-custom/custom-overrides.conf'"
   become: true
@@ -84,6 +93,11 @@
 - name: Install admin-mgr
   ansible.builtin.import_tasks:
     file: internal/admin-mgr.yml
+
+- name: Install supa-tripwire
+  ansible.builtin.import_tasks:
+    file: internal/supa-tripwire.yml
+  when: lookup('ansible.builtin.env', 'SUPA_TRIPWIRE_URL') | length > 0
 
 - name: Install adminapi
   ansible.builtin.import_tasks:
@@ -112,6 +126,10 @@
     file: internal/supabase-admin-agent.yml
   tags:
     - aws-only
+
+- name: Install mint-cli
+  ansible.builtin.import_tasks:
+    file: internal/mint-cli.yml
 
 - name: Envoy - use lds.supabase.yaml for /etc/envoy/lds.yaml
   ansible.builtin.command:

@@ -54,3 +54,32 @@ ORDER BY
 
 -- assert search_path is preserved after after-create script is run
 show search_path;
+
+-- The following test code verifies that a pg_extension table created in pg_temp
+-- doesn't shadow the real one when supabase_vault/after-create.sql runs as superuser.
+set client_min_messages = warning;
+
+drop extension supabase_vault cascade;
+
+create temp table pg_extension (oid oid, extname text, extversion text, extowner oid);
+insert into pg_extension values (0, 'supabase_vault', '0.2.8', 'postgres'::regrole);
+
+create extension supabase_vault;
+
+drop table pg_temp.pg_extension;
+
+reset client_min_messages;
+
+-- postgres and service_role must have been granted access
+select p.proname as function_name, acl.grantee::regrole::text as grantee, acl.privilege_type
+from pg_proc p
+cross join lateral aclexplode(p.proacl) as acl
+where p.pronamespace = 'vault'::regnamespace
+  and acl.grantee::regrole::text in ('postgres', 'service_role')
+order by 1, 2, 3;
+
+select
+  has_schema_privilege('postgres', 'vault', 'usage') as postgres_usage,
+  has_schema_privilege('service_role', 'vault', 'usage') as service_role_usage;
+
+show search_path;

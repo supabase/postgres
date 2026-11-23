@@ -8,21 +8,30 @@
 stdenv.mkDerivation rec {
   pname = "supautils";
   name = pname;
-  version = "3.4.0";
+  version = "4.0.1";
 
   buildInputs = [ postgresql ];
+
+  separateDebugInfo = true;
+
+  # dlopen'd into postgres, which already links these libs
+  NIX_DONT_SET_RPATH = stdenv.isLinux;
 
   src = fetchFromGitHub {
     owner = "supabase";
     repo = pname;
     rev = "refs/tags/v${version}";
-    hash = "sha256-O2zVVVf2OFTCc4BYHuGJ67odU0TwMnTJQuz9uk+a4/0=";
+    hash = "sha256-Cyl54fWuHsAOkYrCPUFSIjqYeeKUIsvFSDqyBqpEm7E=";
   };
 
+  # remove once all Ubuntu 20.04 (glibc 2.31) hosts are decommissioned
+  patches = [ ./patches/supautils-strtol-glibc-compat.patch ];
+
   installPhase = ''
-    mkdir -p $out/lib
+    mkdir -p $out/lib/postgresql
 
     install -D *${postgresql.dlSuffix} -t $out/lib
+    ln -s ../supautils${postgresql.dlSuffix} $out/lib/postgresql/supautils${postgresql.dlSuffix}
   '';
 
   meta = with lib; {

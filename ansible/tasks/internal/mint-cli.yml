@@ -1,0 +1,55 @@
+- name: Download mint-cli archive
+  ansible.builtin.get_url:
+    url: "{{ mint_cli_artifacts[platform]['url'] }}"
+    checksum: "{{ mint_cli_artifacts[platform]['checksum'] }}"
+    dest: /tmp/mint-cli.tar.xz
+    mode: "0644"
+    timeout: 90
+  register: download_result
+  until: download_result is succeeded
+  retries: 3
+  delay: 2
+
+# The archive holds one member, renamed on extract so the task does not depend on its name.
+- name: Unpack mint-cli into /usr/local/bin
+  ansible.builtin.unarchive:
+    remote_src: true
+    src: /tmp/mint-cli.tar.xz
+    dest: /usr/local/bin/
+    extra_opts:
+      - --transform=s,.*,mint-cli,
+
+- name: Set mint-cli owner and mode
+  ansible.builtin.file:
+    path: /usr/local/bin/mint-cli
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Remove mint-cli archive
+  ansible.builtin.file:
+    path: /tmp/mint-cli.tar.xz
+    state: absent
+
+# Salt's formula.mint owns these units and the renew script they run, and
+# enables the timer only in listed regions.
+- name: Install mint-token systemd units
+  ansible.builtin.copy:
+    src: "files/mint_cli/{{ item }}"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - mint-token.service
+    - mint-token.timer
+
+- name: Reload systemd for mint-token units
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: Disable the mint-token timer
+  ansible.builtin.systemd:
+    name: mint-token.timer
+    enabled: false
+    state: stopped

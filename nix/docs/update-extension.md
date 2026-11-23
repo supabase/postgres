@@ -26,6 +26,7 @@ These extensions use `stdenv.mkDerivation` and require only basic fields in `ver
 1. **Create a branch off of `develop`**
 
 2. **Update `nix/ext/versions.json`** - Add a new version entry for your extension:
+
    ```json
    "extension_name": {
      "x.y.z": {
@@ -43,6 +44,7 @@ These extensions use `stdenv.mkDerivation` and require only basic fields in `ver
    - `"patches"` (optional): Array of patch files if needed (e.g., `["pg_cron-1.3.1-pg15.patch"]`)
 
 3. **Calculate the hash** - Run a nix build to get the correct hash:
+
    ```bash
    nix build .#psql_15.exts.extension_name -L
    ```
@@ -50,6 +52,7 @@ These extensions use `stdenv.mkDerivation` and require only basic fields in `ver
    Nix will fail and print the correct hash. Copy it and update the `hash` field in `versions.json`.
 
 4. **Re-run the build** to verify:
+
    ```bash
    nix build .#psql_15.exts.extension_name -L
    ```
@@ -59,6 +62,7 @@ These extensions use `stdenv.mkDerivation` and require only basic fields in `ver
 6. **Update `ansible/vars.yml`** with the new version as usual
 
 7. **Run tests locally** to verify the update succeeded:
+
    ```bash
    nix flake check -L
    ```
@@ -71,7 +75,7 @@ These extensions use `stdenv.mkDerivation` and require only basic fields in `ver
 
 8. **Ready for PR review**
 
-9. **Once approved**: If you want the change in a release, update `common-nix.vars.yml` with the new version prior to merging
+9. **Once approved**: If you want the change in a release, bump the version in `ansible/postgres_release.yml` prior to merging
 
 ### For Rust/pgrx Extensions (e.g., wrappers, pg_jsonschema, pg_graphql)
 
@@ -80,6 +84,7 @@ These extensions use `mkPgrxExtension` and require additional Rust and pgrx vers
 1. **Create a branch off of `develop`**
 
 2. **Update `nix/ext/versions.json`** - Add a new version entry with Rust/pgrx fields:
+
    ```json
    "extension_name": {
      "x.y.z": {
@@ -123,6 +128,7 @@ These extensions use `mkPgrxExtension` and require additional Rust and pgrx vers
    This ensures that migration paths are created for users upgrading from older versions.
 
 5. **Re-run the build** to verify:
+
    ```bash
    nix build .#psql_15.exts.extension_name -L
    ```
@@ -132,15 +138,16 @@ These extensions use `mkPgrxExtension` and require additional Rust and pgrx vers
 7. **Update `ansible/vars.yml`** with the new version
 
 8. **Run full test suite**:
+
    ```bash
    nix flake check -L
    ```
 
    For pgrx extensions, this will also verify that migration paths work correctly.
 
-9.  **Ready for PR review**
+9. **Ready for PR review**
 
-10. **Once approved**: Update `common-nix.vars.yml` if releasing
+10. **Once approved**: Bump `ansible/postgres_release.yml` if releasing
 
 > **Need to update pgrx or Rust versions?** See [Updating cargo-pgrx Extensions](./updating-pgrx-extensions.md) for the complete guide covering pgrx version updates, Rust toolchain updates (including `nix flake update rust-overlay`), and troubleshooting.
 
@@ -155,11 +162,13 @@ For extensions like `supautils.nix` that haven't been migrated to the new struct
 1. **Create a branch off of `develop`**
 
 2. **Update the version** directly in the `.nix` file:
+
    ```nix
    version = "3.0.0";  # Update this
    ```
 
 3. **Temporarily clear the hash**:
+
    ```nix
    hash = "";  # Clear this temporarily
    ```
@@ -167,6 +176,7 @@ For extensions like `supautils.nix` that haven't been migrated to the new struct
    Save the file and stage it: `git add .`
 
 4. **Calculate the hash**:
+
    ```bash
    nix build .#psql_15.exts.supautils -L
    ```
@@ -174,11 +184,13 @@ For extensions like `supautils.nix` that haven't been migrated to the new struct
    Nix will print the calculated sha256 value.
 
 5. **Update the hash** with the calculated value:
+
    ```nix
    hash = "sha256-EKKjNZQf7HwP/MxpHoPtbEtwXk+wO241GoXVcXpDMFs=";
    ```
 
 6. **Re-run the build**:
+
    ```bash
    nix build .#psql_15.exts.supautils -L
    ```
@@ -188,11 +200,12 @@ For extensions like `supautils.nix` that haven't been migrated to the new struct
 8. **Update `ansible/vars.yml`**
 
 9. **Run tests**:
+
    ```bash
    nix flake check -L
    ```
 
-10. **PR review and merge** (update `common-nix.vars.yml` if releasing)
+10. **PR review and merge** (bump `ansible/postgres_release.yml` if releasing)
 
 ---
 
@@ -217,11 +230,13 @@ The `nix flake check -L` command is your primary local testing tool:
 **Hash mismatch errors**: Make sure you're building with an empty hash first (`hash = "";`), then copy the exact hash from the error output.
 
 **Build failures**: Check that:
+
 - PostgreSQL versions in `versions.json` are correct
 - For pgrx extensions: Rust and pgrx versions are compatible
 - All required dependencies are listed
 
 **Test failures**: Run with `-L` flag to see detailed logs:
+
 ```bash
 nix flake check -L 2>&1 | tee build.log
 ```

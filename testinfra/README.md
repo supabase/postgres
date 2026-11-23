@@ -18,15 +18,18 @@ set -euo pipefail
 # cwd: repo root
 
 # build AMI
-AWS_PROFILE=supabase-dev packer build \
-  -var-file=development-arm64.vars.pkr.hcl \
-  -var-file=common.vars.pkr.hcl \
-  -var "ansible_arguments=" \
-  -var "postgres-version=ci-ami-test" \
-  -var "region=ap-southeast-1" \
-  -var 'ami_regions=["ap-southeast-1"]' \
-  amazon-arm64.pkr.hcl
+# The SHA must be pushed to GitHub: stage 2 evaluates packages from github:supabase/postgres/<sha>.
+export AWS_PROFILE=supabase-dev AWS_REGION=us-east-1
+sha=$(git rev-parse HEAD)
+# build-ami writes its outputs (AMI IDs, execution ID) to $GITHUB_OUTPUT when it is set
+export GITHUB_OUTPUT=$(mktemp)
+nix run .#build-ami -- \
+  --arch arm64 \
+  --postgres-major-version 17 \
+  --git-sha "$sha"
 
 # run tests
-AWS_PROFILE=supabase-dev pytest -vv -s testinfra/test_*.py
+export AMI_ID=$(sed -n 's/^stage2_ami_id=//p' "$GITHUB_OUTPUT")
+export EXECUTION_ID=$(sed -n 's/^execution_id=//p' "$GITHUB_OUTPUT")
+pytest -vv -s testinfra/test_*.py
 ```

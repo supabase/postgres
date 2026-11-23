@@ -21,8 +21,8 @@ writeShellApplication {
     # Usage:
     #   nix run .#docker-image-test -- Dockerfile-17
     #   nix run .#docker-image-test -- --no-build Dockerfile-15
-    #   nix run .#docker-image-test -- --target production Dockerfile-multigres
-    #   nix run .#docker-image-test -- --no-build --target production Dockerfile-multigres
+    #   nix run .#docker-image-test -- --target variant-17 Dockerfile-multigres
+    #   nix run .#docker-image-test -- --no-build --target variant-orioledb-17 Dockerfile-multigres
 
     set -euo pipefail
 
@@ -41,7 +41,6 @@ writeShellApplication {
     HTTP_MOCK_PID=""
     KEEP_CONTAINER=false
     TARGET=""
-    PG_VERSION=""
 
     # Colors for output
     RED='\033[0;31m'
@@ -67,19 +66,16 @@ writeShellApplication {
       --no-build         Skip building the image (use existing)
       --keep             Keep the container running after tests (for debugging)
       --target TARGET    Build target (required for Dockerfile-multigres)
-                         Values: production
-      --pg-version VER   PostgreSQL major version (required for Dockerfile-supabase)
-                         Values: 15, 17
+                         Values: variant-17, variant-orioledb-17
 
     Examples:
       nix run .#docker-image-test -- Dockerfile-17
       nix run .#docker-image-test -- Dockerfile-15
       nix run .#docker-image-test -- Dockerfile-orioledb-17
       nix run .#docker-image-test -- --no-build Dockerfile-17
-      nix run .#docker-image-test -- --pg-version 17 Dockerfile-supabase
-      nix run .#docker-image-test -- --no-build --pg-version 15 Dockerfile-supabase
-      nix run .#docker-image-test -- --target production Dockerfile-multigres
-      nix run .#docker-image-test -- --no-build --target production Dockerfile-multigres
+      nix run .#docker-image-test -- --target variant-17 Dockerfile-multigres
+      nix run .#docker-image-test -- --target variant-orioledb-17 Dockerfile-multigres
+      nix run .#docker-image-test -- --no-build --target variant-17 Dockerfile-multigres
     EOF
     }
 
@@ -89,29 +85,19 @@ writeShellApplication {
             Dockerfile-15) echo "15 5436" ;;
             Dockerfile-17) echo "17 5435" ;;
             Dockerfile-orioledb-17) echo "orioledb-17 5437" ;;
-            Dockerfile-supabase)
-                if [[ -z "$PG_VERSION" ]]; then
-                    log_error "Dockerfile-supabase requires --pg-version (15 or 17)"
-                    exit 1
-                fi
-                case "$PG_VERSION" in
-                    15) echo "15 5436" ;;
-                    17) echo "17 5435" ;;
-                    *)  log_error "Unknown --pg-version: $PG_VERSION (expected 15 or 17)"; exit 1 ;;
-                esac
-                ;;
             Dockerfile-multigres)
                 case "''${TARGET}" in
-                    production) echo "multigres-17 5438" ;;
+                    variant-17)          echo "multigres-17 5438" ;;
+                    variant-orioledb-17) echo "multigres-orioledb-17 5439" ;;
                     *)
-                        log_error "Dockerfile-multigres requires --target production"
+                        log_error "Dockerfile-multigres requires --target (variant-17 or variant-orioledb-17)"
                         exit 1
                         ;;
                 esac
                 ;;
             *)
                 log_error "Unknown Dockerfile: $dockerfile"
-                log_error "Supported: Dockerfile-15, Dockerfile-17, Dockerfile-supabase, Dockerfile-orioledb-17, Dockerfile-multigres"
+                log_error "Supported: Dockerfile-15, Dockerfile-17, Dockerfile-orioledb-17, Dockerfile-multigres"
                 exit 1
                 ;;
         esac
@@ -120,6 +106,19 @@ writeShellApplication {
     # Tests to skip for OrioleDB
     ORIOLEDB_SKIP_TESTS=(
         "index_advisor"
+
+        # OrioleDB still uses PostgreSQL 17.11.
+        # drop these skips when it includes the 17.12 fixes.
+        "alter_column_type_rowtype_deps"
+        "bpchar_btree_dedup"
+        "cast_function_execute_privilege"
+        "drop_owned_rls_policy"
+        "function_def_target_alias"
+        "jsonpath_gin_lookup"
+        "partition_prune_range"
+        "to_char_v_overflow"
+        "upsert_rls_conflict_where"
+        "upsert_view_visibility"
     )
 
     # Tests to skip for multigres images (pgsodium not installed; vault has z_multigres-17_ variant)
@@ -128,12 +127,7 @@ writeShellApplication {
         "vault"
     )
 
-    # Tests to skip for multigres-orioledb-17 (superset of multigres skips)
-    MULTIGRES_ORIOLEDB_SKIP_TESTS=(
-        "pgsodium"
-        "vault"
-        "index_advisor"
-    )
+    MULTIGRES_ORIOLEDB_SKIP_TESTS=("''${ORIOLEDB_SKIP_TESTS[@]}" "''${MULTIGRES_SKIP_TESTS[@]}")
 
     get_test_list() {
         local version="$1"
@@ -306,15 +300,14 @@ writeShellApplication {
         return 1
     }
 
-    # Verify pgctld integration and bootstrap postgres for multigres images.
-    # pgctld server (PID 1) is a gRPC management daemon — it does NOT auto-start
-    # PostgreSQL. We call pgctld init + start via docker exec (both are standalone
-    # commands that don't communicate with the running server).
-    # Must be called BEFORE wait_for_postgres.
+    # Verify pgctld integration for multigres images.
+    # Runs a short-lived pgctld cluster in /tmp (separate from the SQL-test postgres).
+    # Tests: container user is postgres, /usr/local/bin/pgctld works, pgctld init+start
+    # succeeds with NO extra flags, and (orioledb variant) orioledb loads automatically.
     verify_pgctld_integration() {
         local container="$1"
         local version="$2"
-        local pooler_dir="/var/lib/pgctld"
+        local pooler_dir="/tmp/pgctld-verify"
 
         log_info "=== pgctld integration checks ==="
 
@@ -334,53 +327,20 @@ writeShellApplication {
         fi
         log_info "  ✓ /usr/local/bin/pgctld exists"
 
-        # 3. /usr/local/bin/pgctld must be a wrapper script (not the raw binary)
-        local first_line
-        first_line=$(docker exec "$container" sh -c "head -1 /usr/local/bin/pgctld")
-        if [[ "$first_line" != "#!/bin/sh" ]]; then
-            log_error "  /usr/local/bin/pgctld is not a wrapper script (first line: $first_line)"
-            exit 1
-        fi
-        log_info "  ✓ /usr/local/bin/pgctld is a wrapper script"
-
-        # 3.5. wal-g must be fully removed: no include line left dangling in the
-        # static /etc/postgresql/postgresql.conf. (Currently, pgctld doesn't load
-        # this file today, but if it's ever loaded directly it should not error out.
-        # See Dockerfile-multigres.) None of the inherited wal-g files should remain.
-        if docker exec "$container" sh -c "grep -q 'wal-g.conf' /etc/postgresql/postgresql.conf"; then
-            log_error "  /etc/postgresql/postgresql.conf still references wal-g.conf"
-            exit 1
-        fi
-        for f in /etc/postgresql-custom/wal-g.conf /home/postgres/wal_fetch.sh /root/wal_change_ownership.sh; do
-            if docker exec "$container" test -e "$f"; then
-                log_error "  $f should have been removed from the multigres image"
-                exit 1
-            fi
-        done
-        log_info "  ✓ wal-g fully removed (no dangling include, no inherited files)"
-
-        # 4. pgctld init: initializes PGDATA and runs SQL init scripts (via wrapper's
-        #    --pg-initdb-sql-dirs). Uses pooler-dir for socket dir and pgBackRest config.
-        local init_out init_rc=0
-        init_out=$(docker exec \
-            -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
-            "$container" \
-            sh -c "/usr/local/bin/pgctld init --pooler-dir $pooler_dir 2>&1") || init_rc=$?
-        if [[ $init_rc -ne 0 ]] || ! echo "$init_out" | grep -q "initialized successfully"; then
-            log_error "  pgctld init failed (exit $init_rc): $init_out"
+        # 3. pgctld init must succeed with no extra flags (tests USER postgres fix)
+        local init_out
+        init_out=$(docker exec -e PGDATA="$pooler_dir/pg_data" "$container" sh -c "/usr/local/bin/pgctld init --pooler-dir $pooler_dir 2>&1")
+        if ! echo "$init_out" | grep -q "initialized successfully"; then
+            log_error "  pgctld init failed: $init_out"
             exit 1
         fi
         log_info "  ✓ pgctld init --pooler-dir $pooler_dir"
 
-        # 5. pgctld start: starts PostgreSQL (pg_ctl start). Postgres will listen on
-        #    port 5432 inside the container and on the pooler-dir unix socket.
-        local start_out start_rc=0
-        start_out=$(docker exec \
-            -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
-            "$container" \
-            sh -c "/usr/local/bin/pgctld start --pooler-dir $pooler_dir 2>&1") || start_rc=$?
-        if [[ $start_rc -ne 0 ]] || ! echo "$start_out" | grep -q "started successfully"; then
-            log_error "  pgctld start failed (exit $start_rc): $start_out"
+        # 4. pgctld start must succeed
+        local start_out
+        start_out=$(docker exec -e PGDATA="$pooler_dir/pg_data" "$container" sh -c "/usr/local/bin/pgctld start --pooler-dir $pooler_dir 2>&1")
+        if ! echo "$start_out" | grep -q "started successfully"; then
+            log_error "  pgctld start failed: $start_out"
             exit 1
         fi
         log_info "  ✓ pgctld start --pooler-dir $pooler_dir"
@@ -416,8 +376,67 @@ writeShellApplication {
         fi
         log_info "  ✓ supautils.conf policy loaded (policy_grants set)"
 
+        # 7. multigres_probe must come out of the init manifest closed:
+        # NOLOGIN and no password, so nothing can log in as it until the
+        # deployment enables it. It must also have no BYPASSRLS, connection
+        # limit 2, statement_timeout 2s, a search_path without public, and
+        # its queries kept out of pg_stat_statements and the Postgres logs
+        # (errors are still logged, without the query text), and its role
+        # pinned to itself so a database-wide default role cannot switch it.
+        # The name must be reserved so non-superusers cannot alter or drop it.
+        local probe_role
+        probe_role=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" sh -c "
+            psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
+                -tAc \"SELECT rolcanlogin, rolsuper, rolbypassrls, rolconnlimit FROM pg_roles WHERE rolname = 'multigres_probe';\" 2>&1") || true
+        if [[ "$probe_role" != "f|f|f|2" ]]; then
+            log_error "  multigres_probe attributes wrong (got: '$probe_role', want: 'f|f|f|2')"
+            exit 1
+        fi
+        log_info "  ✓ multigres_probe is NOLOGIN NOSUPERUSER NOBYPASSRLS CONNECTION LIMIT 2"
+
+        local probe_no_password
+        probe_no_password=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" sh -c "
+            psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
+                -tAc \"SELECT rolpassword IS NULL FROM pg_authid WHERE rolname = 'multigres_probe';\" 2>&1") || true
+        if [[ "$probe_no_password" != "t" ]]; then
+            log_error "  multigres_probe must have no password after init (got: '$probe_no_password', want: 't')"
+            exit 1
+        fi
+        log_info "  ✓ multigres_probe has no password"
+
+        local probe_settings
+        local want_settings="auto_explain.log_min_duration=-1"
+        want_settings+="|log_duration=off"
+        want_settings+="|log_min_duration_statement=-1"
+        want_settings+="|log_min_error_statement=panic"
+        want_settings+="|log_min_messages=error"
+        want_settings+="|log_statement=none"
+        want_settings+="|pg_stat_statements.track=none"
+        want_settings+="|pgaudit.log=none"
+        want_settings+="|role=multigres_probe"
+        want_settings+="|search_path=pg_catalog, pg_temp, multigres"
+        want_settings+="|statement_timeout=2s"
+        probe_settings=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" sh -c "
+            psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
+                -tAc \"SELECT string_agg(c, '|' ORDER BY convert_to(c, 'UTF8')) FROM pg_db_role_setting, unnest(setconfig) AS c WHERE setrole = 'multigres_probe'::regrole AND setdatabase = 0;\" 2>&1") || true
+        if [[ "$probe_settings" != "$want_settings" ]]; then
+            log_error "  multigres_probe settings wrong (got: '$probe_settings', want: '$want_settings')"
+            exit 1
+        fi
+        log_info "  ✓ multigres_probe settings: $want_settings"
+
+        local reserved_roles
+        reserved_roles=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" sh -c "
+            psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
+                -tAc \"SHOW supautils.reserved_roles;\" 2>&1") || true
+        if ! echo "$reserved_roles" | grep -qw "multigres_probe"; then
+            log_error "  multigres_probe not in supautils.reserved_roles (got: $reserved_roles)"
+            exit 1
+        fi
+        log_info "  ✓ multigres_probe is in supautils.reserved_roles"
+
         if [[ "$version" == "multigres-orioledb-17" ]]; then
-            # 7. /usr/local/bin/pgctld must be a wrapper script (not a plain symlink)
+            # 8. /usr/local/bin/pgctld must be a wrapper script (not a plain symlink)
             local first_line
             first_line=$(docker exec "$container" sh -c "head -1 /usr/local/bin/pgctld")
             if [[ "$first_line" != "#!/bin/sh" ]]; then
@@ -426,43 +445,69 @@ writeShellApplication {
             fi
             log_info "  ✓ /usr/local/bin/pgctld is a wrapper script"
 
-            # orioledb checks (shared_preload_libraries, default_table_access_method) are deferred
-            # to verify_orioledb_integration(), called after wait_for_postgres succeeds.
-            log_info "  (orioledb checks deferred until postgres is ready)"
+            # 9. shared_preload_libraries must include orioledb — injected by wrapper, no flags needed
+            local spl
+            spl=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" sh -c "
+                psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
+                    -tAc \"SHOW shared_preload_libraries;\" 2>&1") || true
+            if ! echo "$spl" | grep -q "orioledb"; then
+                log_error "  orioledb not in shared_preload_libraries (got: $spl)"
+                log_error "  Check that wrapper script injects --postgres-config-template"
+                exit 1
+            fi
+            log_info "  ✓ shared_preload_libraries contains orioledb"
+
+            # 10. default_table_access_method must be orioledb
+            local tam
+            tam=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" sh -c "
+                psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
+                    -tAc \"SHOW default_table_access_method;\" 2>&1") || true
+            if ! echo "$tam" | grep -q "orioledb"; then
+                log_error "  default_table_access_method is not orioledb (got: $tam)"
+                exit 1
+            fi
+            log_info "  ✓ default_table_access_method = orioledb"
         fi
 
+        # Shut down the pgctld test cluster so it doesn't hold the unix socket
+        docker exec "$container" sh -c "
+            pg_ctl stop -D $pooler_dir/pg_data -m immediate 2>/dev/null || true
+        "
         log_info "=== pgctld integration checks passed ==="
     }
 
-    # For multigres-orioledb-17: verify orioledb is loaded after postgres is ready.
-    verify_orioledb_integration() {
+    # Bootstrap a multigres container: initdb + pg_ctl start + create supabase_admin + run migrations
+    # Multigres images use "tail -f /dev/null" as entrypoint so postgres must be started manually.
+    start_multigres_postgres() {
         local container="$1"
 
-        log_info "=== orioledb integration checks ==="
+        log_info "Multigres: initializing PostgreSQL cluster..."
+        docker exec -u postgres "$container" \
+            bash -c "echo '$POSTGRES_PASSWORD' > /tmp/pgpwfile && \
+                initdb \
+                    -D /var/lib/postgresql/data \
+                    --username=supabase_admin \
+                    --pwfile=/tmp/pgpwfile \
+                    --allow-group-access \
+                    --locale-provider=icu \
+                    --encoding=UTF-8 \
+                    --icu-locale=en_US.UTF-8 && \
+                rm /tmp/pgpwfile"
 
-        # shared_preload_libraries must include orioledb — injected by wrapper via config template
-        local spl
-        spl=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" \
-            psql -U "$POSTGRES_USER" -d postgres -h /var/run/postgresql \
-                -tAc "SHOW shared_preload_libraries;" 2>&1) || true
-        if ! echo "$spl" | grep -q "orioledb"; then
-            log_error "  orioledb not in shared_preload_libraries (got: $spl)"
-            log_error "  Check that wrapper script injects --postgres-config-template"
-            exit 1
-        fi
-        log_info "  ✓ shared_preload_libraries contains orioledb"
+        log_info "Multigres: starting PostgreSQL (config at /etc/postgresql)..."
+        docker exec -u postgres "$container" \
+            pg_ctl start -D /var/lib/postgresql/data \
+                -o "-c config_file=/etc/postgresql/postgresql.conf" \
+                -w -t 60
 
-        local tam
-        tam=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" \
-            psql -U "$POSTGRES_USER" -d postgres -h /var/run/postgresql \
-                -tAc "SHOW default_table_access_method;" 2>&1) || true
-        if ! echo "$tam" | grep -q "orioledb"; then
-            log_error "  default_table_access_method is not orioledb (got: $tam)"
-            exit 1
-        fi
-        log_info "  ✓ default_table_access_method = orioledb"
-
-        log_info "=== orioledb integration checks passed ==="
+        log_info "Multigres: running schema migrations..."
+        docker exec \
+            -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+            -e POSTGRES_DB="$POSTGRES_DB" \
+            -e POSTGRES_HOST=/var/run/postgresql \
+            -e POSTGRES_PORT=5432 \
+            "$container" \
+            sh /docker-entrypoint-initdb.d/migrate.sh
     }
 
     main() {
@@ -474,8 +519,7 @@ writeShellApplication {
                 -h|--help) print_help; exit 0 ;;
                 --no-build) skip_build=true; shift ;;
                 --keep) KEEP_CONTAINER=true; shift ;;
-                --target) if [[ -z "''${2:-}" ]]; then log_error "--target requires a value"; exit 1; fi; TARGET="$2"; shift; shift ;;
-                --pg-version) if [[ -z "''${2:-}" ]]; then log_error "--pg-version requires a value"; exit 1; fi; PG_VERSION="$2"; shift; shift ;;
+                --target) TARGET="$2"; shift; shift ;;
                 -*) log_error "Unknown option: $1"; print_help; exit 1 ;;
                 *) dockerfile="$1"; shift ;;
             esac
@@ -506,12 +550,8 @@ writeShellApplication {
             if [[ -n "$TARGET" ]]; then
                 target_arg="--target $TARGET"
             fi
-            local pg_version_arg=""
-            if [[ -n "$PG_VERSION" ]]; then
-                pg_version_arg="--build-arg PG_VERSION=$PG_VERSION"
-            fi
             # shellcheck disable=SC2086
-            if ! docker build -f "$REPO_ROOT/$dockerfile" $target_arg $pg_version_arg -t "$IMAGE_TAG" "$REPO_ROOT"; then
+            if ! docker build -f "$REPO_ROOT/$dockerfile" $target_arg -t "$IMAGE_TAG" "$REPO_ROOT"; then
                 log_error "Failed to build image"
                 exit 1
             fi
@@ -551,21 +591,17 @@ writeShellApplication {
             -p "$PORT:5432" \
             "$IMAGE_TAG"
 
-        # Multigres: pgctld server (PID 1) does not auto-start PostgreSQL.
-        # verify_pgctld_integration starts Postgres and ensures its listening for us.
+        # Multigres images use "tail -f /dev/null" as their entrypoint — postgres must be
+        # started manually before we can run tests against them.
         if [[ "$VERSION" == multigres-* ]]; then
             verify_pgctld_integration "$CONTAINER_NAME" "$VERSION"
+            start_multigres_postgres "$CONTAINER_NAME"
         fi
 
         if ! wait_for_postgres "localhost" "$PORT"; then
             log_error "Container logs:"
             docker logs "$CONTAINER_NAME"
             exit 1
-        fi
-
-        # orioledb variant: verify orioledb loaded now that postgres is ready.
-        if [[ "$VERSION" == "multigres-orioledb-17" ]]; then
-            verify_orioledb_integration "$CONTAINER_NAME"
         fi
 
         log_info "Starting HTTP mock server on host..."
@@ -652,7 +688,7 @@ writeShellApplication {
         PATCHED_TESTS_DIR="$OUTPUT_DIR/tests"
         cp -r "$TESTS_DIR" "$PATCHED_TESTS_DIR"
 
-        for f in pgmq.out vault.out; do
+        for f in dblink.out pg_tle_dependencies.out pgmq.out vault.out; do
             if [[ -f "$PATCHED_TESTS_DIR/expected/$f" ]]; then
                 # shellcheck disable=SC2016
                 sed -i.bak \

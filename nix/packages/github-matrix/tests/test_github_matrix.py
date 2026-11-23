@@ -6,11 +6,12 @@ import pytest
 
 from github_matrix import (
     NixEvalJobsOutput,
+    build_select_expr,
     get_runner_for_package,
     is_extension_pkg,
     is_virt_pkg,
     is_large_pkg,
-    parse_nix_eval_line,
+    select_system_matrices,
     sort_pkgs_by_closures,
 )
 
@@ -87,29 +88,6 @@ class TestIsVirtPkg:
         assert is_virt_pkg(pkg) is expected
 
 
-class TestNixOSCheck:
-    @pytest.mark.parametrize(
-        "system,expected",
-        [
-            ("aarch64-darwin", False),
-            ("aarch64-linux", True),
-            ("x86_64-linux", False),
-        ],
-    )
-    def test_system(self, system, expected):
-        check = {
-            "attr": f"attr-{system}",
-            "drvPath": f"test_{system}",
-            "system": system,
-            "requiredSystemFeatures": ["nixos-test"],
-        }
-        result = parse_nix_eval_line(json.dumps(check), set())
-        if expected:
-            assert result._value is not None
-        else:
-            assert result._value is None
-
-
 class TestGetRunnerForPackage:
     @pytest.mark.parametrize(
         "system,feature,expected",
@@ -117,7 +95,7 @@ class TestGetRunnerForPackage:
             (
                 "aarch64-darwin",
                 "apple-virt",
-                {"group": "self-hosted-runners-nix", "labels": ["aarch64-darwin"]},
+                {"labels": ["blacksmith-6vcpu-macos-26"]},
             ),
             (
                 "aarch64-darwin",
@@ -217,3 +195,58 @@ class TestSortPkgsByClosures:
 
         result = sort_pkgs_by_closures([pkg1, pkg2])
         assert result == [pkg1, pkg2]
+
+
+class TestBuildSelectExpr:
+    def test_all_systems(self):
+        assert (
+            build_select_expr(["checks", "legacyPackages"], None)
+            == "outputs: { inherit (outputs) checks legacyPackages; }"
+        )
+
+    def test_one_system(self):
+        assert build_select_expr(["checks", "legacyPackages"], "aarch64-darwin") == (
+            "outputs: { checks.aarch64-darwin = outputs.checks.aarch64-darwin; "
+            "legacyPackages.aarch64-darwin = outputs.legacyPackages.aarch64-darwin; }"
+        )
+
+
+class TestSelectSystemMatrices:
+    @staticmethod
+    def job(attr, system):
+        return {
+            "attr": attr,
+            "name": attr or "no packages to build",
+            "system": system,
+            "runs_on": {"labels": ["ubuntu-latest"]},
+        }
+
+    def test_picks_the_system_and_ignores_placeholders(self):
+        packages = {
+            "x86_64_linux": {
+                "include": [self.job("legacyPackages.x86_64-linux.a", "x86_64-linux")]
+            },
+            "aarch64_linux": {"include": [self.job("", "aarch64-linux")]},
+        }
+        checks = {
+            "x86_64_linux": {"include": [self.job("", "x86_64-linux")]},
+            "aarch64_linux": {"include": [self.job("", "aarch64-linux")]},
+        }
+        pkgs, chks, others = select_system_matrices(packages, checks, "x86_64-linux")
+        assert pkgs == packages["x86_64_linux"]
+        assert chks == checks["x86_64_linux"]
+        assert others == []
+
+    def test_reports_jobs_for_other_systems(self):
+        packages = {
+            "x86_64_linux": {"include": [self.job("", "x86_64-linux")]},
+            "aarch64_linux": {
+                "include": [self.job("legacyPackages.x86_64-linux.b", "aarch64-linux")]
+            },
+        }
+        checks = {
+            "x86_64_linux": {"include": [self.job("", "x86_64-linux")]},
+            "aarch64_linux": {"include": [self.job("", "aarch64-linux")]},
+        }
+        _, _, others = select_system_matrices(packages, checks, "x86_64-linux")
+        assert others == ["aarch64-linux"]

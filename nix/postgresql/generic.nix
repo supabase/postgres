@@ -12,10 +12,10 @@ let
       zlib,
       readline,
       openssl,
-      icu75,
+      icu75, # Pin ICU to version 75 to maintain collation version 153.120. Changing this is *WILL* cause collation mismatch issues, don't do it!
       lz4,
       zstd,
-      systemd,
+      systemdLibs,
       libossp_uuid,
       pkg-config,
       libxml2,
@@ -24,7 +24,7 @@ let
       replaceVars,
       darwin,
       linux-pam,
-      #orioledb specific
+      # PG17+
       perl,
       bison,
       flex,
@@ -34,7 +34,8 @@ let
       libxslt,
 
       # This is important to obtain a version of `libpq` that does not depend on systemd.
-      systemdSupport ? lib.meta.availableOn stdenv.hostPlatform systemd && !stdenv.hostPlatform.isStatic,
+      systemdSupport ?
+        lib.meta.availableOn stdenv.hostPlatform systemdLibs && !stdenv.hostPlatform.isStatic,
       enableSystemd ? null,
       gssSupport ? with stdenv.hostPlatform; !isWindows && !isStatic,
 
@@ -114,14 +115,12 @@ let
         readline
         openssl
         (libxml2.override { python3 = python3; })
-        # Pin ICU to version 75 to maintain collation version 153.120
-        # This prevents collation mismatch warnings when upgrading nixpkgs
         icu75
       ]
       ++ lib.optionals (olderThan "13") [ libxcrypt ]
       ++ lib.optionals lz4Enabled [ lz4 ]
       ++ lib.optionals zstdEnabled [ zstd ]
-      ++ lib.optionals systemdSupport' [ systemd ]
+      ++ lib.optionals systemdSupport' [ systemdLibs ]
       ++ lib.optionals pythonSupport [ python3 ]
       ++ lib.optionals gssSupport [ libkrb5 ]
       ++ lib.optionals stdenv.isLinux [ linux-pam ]
@@ -192,7 +191,7 @@ let
         map fetchurl (lib.attrValues muslPatches)
       )
       ++ lib.optionals stdenv.isLinux [
-        (if atLeast "13" then ./patches/socketdir-in-run-13+.patch else ./patches/socketdir-in-run.patch)
+        ./patches/socketdir-in-run-13+.patch
       ];
 
       installTargets = [ "install-world-bin" ];

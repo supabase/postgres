@@ -1,0 +1,17 @@
+- name: Allocate and format swapfile
+  ansible.builtin.shell: |
+    fallocate -l 1G /swapfile
+    chmod 600 /swapfile
+    mkswap /swapfile
+  args:
+    creates: /swapfile
+
+- name: Add swapfile to fstab
+  ansible.posix.mount:
+    src: /swapfile
+    path: none
+    fstype: swap
+    opts: sw
+    dump: "0"
+    passno: "0"
+    state: present

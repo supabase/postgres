@@ -4,8 +4,8 @@
 
 \restrict SupabaseTestDumpKey123
 
--- Dumped from database version 15.14
--- Dumped by pg_dump version 15.14
+-- Dumped from database version 15.20
+-- Dumped by pg_dump version 15.20
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -169,6 +169,7 @@ $$;
 
 CREATE FUNCTION extensions.grant_pg_cron_access() RETURNS event_trigger
     LANGUAGE plpgsql
+    SET search_path TO 'pg_catalog', 'pg_temp'
     AS $$
 BEGIN
   IF EXISTS (
@@ -214,11 +215,12 @@ COMMENT ON FUNCTION extensions.grant_pg_cron_access() IS 'Grants access to pg_cr
 
 CREATE FUNCTION extensions.grant_pg_graphql_access() RETURNS event_trigger
     LANGUAGE plpgsql
+    SET search_path TO 'pg_catalog', 'pg_temp'
     AS $_$
 begin
     if not exists (
         select 1
-        from pg_event_trigger_ddl_commands() ev
+        from pg_catalog.pg_event_trigger_ddl_commands() ev
         join pg_catalog.pg_extension e on ev.objid = e.oid
         where e.extname = 'pg_graphql'
     ) then
@@ -268,6 +270,7 @@ COMMENT ON FUNCTION extensions.grant_pg_graphql_access() IS 'Grants access to pg
 
 CREATE FUNCTION extensions.grant_pg_net_access() RETURNS event_trigger
     LANGUAGE plpgsql
+    SET search_path TO 'pg_catalog', 'pg_temp'
     AS $$
 BEGIN
   IF EXISTS (
@@ -294,7 +297,7 @@ BEGIN
       WHERE extname = 'pg_net'
       -- all versions in use on existing projects as of 2025-02-20
       -- version 0.12.0 onwards don't need these applied
-      AND extversion IN ('0.2', '0.6', '0.7', '0.7.1', '0.8', '0.10.0', '0.11.0')
+      AND extversion IN ('0.2', '0.6', '0.7', '0.7.1', '0.8.0', '0.10.0', '0.11.0')
     ) THEN
       ALTER function net.http_get(url text, params jsonb, headers jsonb, timeout_milliseconds integer) SECURITY DEFINER;
       ALTER function net.http_post(url text, body jsonb, params jsonb, headers jsonb, timeout_milliseconds integer) SECURITY DEFINER;
@@ -326,12 +329,22 @@ COMMENT ON FUNCTION extensions.grant_pg_net_access() IS 'Grants access to pg_net
 
 CREATE FUNCTION extensions.pgrst_ddl_watch() RETURNS event_trigger
     LANGUAGE plpgsql
+    SET search_path TO 'pg_catalog', 'pg_temp'
     AS $$
 DECLARE
   cmd record;
+  obj_schema text;
 BEGIN
   FOR cmd IN SELECT * FROM pg_event_trigger_ddl_commands()
   LOOP
+    -- triggers and rules have no schema of their own (schema_name is NULL),
+    -- so use the schema of the table they belong to
+    obj_schema := CASE
+      WHEN cmd.object_type IN ('trigger', 'rule')
+        THEN (pg_identify_object_as_address(cmd.classid, cmd.objid, cmd.objsubid)).object_names[1]
+      ELSE cmd.schema_name
+    END;
+
     IF cmd.command_tag IN (
       'CREATE SCHEMA', 'ALTER SCHEMA'
     , 'CREATE TABLE', 'CREATE TABLE AS', 'SELECT INTO', 'ALTER TABLE'
@@ -345,7 +358,8 @@ BEGIN
     , 'COMMENT'
     )
     -- don't notify in case of CREATE TEMP table or other objects created on pg_temp
-    AND cmd.schema_name is distinct from 'pg_temp'
+    -- also exclude any objects inside Supabase schemas
+    AND COALESCE(obj_schema, '') NOT IN ('pg_temp', 'auth', 'realtime', '_realtime', 'storage')
     THEN
       NOTIFY pgrst, 'reload schema';
     END IF;
@@ -359,12 +373,21 @@ END; $$;
 
 CREATE FUNCTION extensions.pgrst_drop_watch() RETURNS event_trigger
     LANGUAGE plpgsql
+    SET search_path TO 'pg_catalog', 'pg_temp'
     AS $$
 DECLARE
   obj record;
+  obj_schema text;
 BEGIN
   FOR obj IN SELECT * FROM pg_event_trigger_dropped_objects()
   LOOP
+    -- triggers and rules have no schema of their own (schema_name is NULL),
+    -- so use the schema of the table they belonged to
+    obj_schema := CASE
+      WHEN obj.object_type IN ('trigger', 'rule') THEN obj.address_names[1]
+      ELSE obj.schema_name
+    END;
+
     IF obj.object_type IN (
       'schema'
     , 'table'
@@ -377,6 +400,8 @@ BEGIN
     , 'rule'
     )
     AND obj.is_temporary IS false -- no pg_temp objects
+    -- also exclude any objects inside Supabase schemas
+    AND COALESCE(obj_schema, '') NOT IN ('pg_temp', 'auth', 'realtime', '_realtime', 'storage')
     THEN
       NOTIFY pgrst, 'reload schema';
     END IF;
@@ -390,6 +415,7 @@ END; $$;
 
 CREATE FUNCTION extensions.set_graphql_placeholder() RETURNS event_trigger
     LANGUAGE plpgsql
+    SET search_path TO 'pg_catalog', 'pg_temp'
     AS $_$
     DECLARE
     graphql_is_dropped bool;

@@ -1,8 +1,14 @@
 #! /usr/bin/env bash
 
-# Common functions and variables used by initiate.sh and complete.sh
+# Common functions and variables used by
+# prepare.sh, initiate.sh and complete.sh
 
+#staging/prod
 REPORTING_PROJECT_REF="ihmaxnjpcccasmrbkpvo"
+
+#localdev
+#REPORTING_PROJECT_REF="ditigwgjchkdxjxijzza"
+
 REPORTING_CREDENTIALS_FILE="/root/upgrade-reporting-credentials"
 
 REPORTING_ANON_KEY=""
@@ -69,6 +75,66 @@ function run_sql {
 	psql -h localhost -U supabase_admin -d postgres "$@"
 }
 
+# TODO: Drop once all projects have been upgraded past 17.6.1.111, 15.14.1.111
+#
+# Old projects still have grant-access event triggers scoped to the tags
+# their original seed used while the grant functions themselves (updated
+# fleet-wide) only act on CREATE EXTENSION events.
+#
+# * issue_pg_graphql_access on CREATE FUNCTION before build 17.6.1.111 /
+#   15.14.1.111
+# * issue_pg_cron_access on CREATE SCHEMA before 15.1.0.130
+#
+# With this mismatch, recreating the extension never re-applies its wiring
+# (graphql_public.graphql wrapper, cron grants). Rescope the triggers so
+# the CREATE EXTENSION statements that re-enable the extensions after
+# pg_upgrade fire them.
+#
+# Trigger definitions kept identical to migrations
+# 20260421000001_rescope_pg_graphql_access_trigger.sql and
+# 20231020085357_revoke_writes_on_cron_job_from_postgres.sql. This is a
+# no-op on projects that already have the CREATE EXTENSION scope.
+function rescope_extension_event_triggers {
+	local sql
+	sql=$(
+		cat <<-'EOF'
+			do $rescope$
+			begin
+			    if exists (
+			        select 1
+			        from pg_proc p
+			        join pg_namespace n on p.pronamespace = n.oid
+			        where n.nspname = 'extensions' and p.proname = 'grant_pg_graphql_access'
+			    ) then
+			        execute 'drop event trigger if exists issue_pg_graphql_access';
+			        execute $q$
+			            create event trigger issue_pg_graphql_access
+			                on ddl_command_end
+			                when tag in ('CREATE EXTENSION')
+			                execute procedure extensions.grant_pg_graphql_access()
+			        $q$;
+			    end if;
+
+			    if exists (
+			        select 1
+			        from pg_proc p
+			        join pg_namespace n on p.pronamespace = n.oid
+			        where n.nspname = 'extensions' and p.proname = 'grant_pg_cron_access'
+			    ) then
+			        execute 'drop event trigger if exists issue_pg_cron_access';
+			        execute $q$
+			            create event trigger issue_pg_cron_access
+			                on ddl_command_end
+			                when tag in ('CREATE EXTENSION')
+			                execute procedure extensions.grant_pg_cron_access()
+			        $q$;
+			    end if;
+			end $rescope$;
+		EOF
+	)
+	run_sql -c "$sql"
+}
+
 # Wrap a db name in dbname='...' (escaping \ and ') so characters special to -d
 # parsing (=, spaces, quotes) stay part of a literal name, not a conninfo fragment.
 # psql parses a -d value containing '=' as a full conninfo string, so a customer
@@ -102,11 +168,12 @@ function ship_logs {
 	HOSTNAME=$(hostname)
 	DERIVED_REF="${HOSTNAME##*-}"
 
-	printf -v BODY '{ "ref": "%s", "step": "%s", "content": %s }' "$DERIVED_REF" "completion" "$(cat "$LOG_FILE" | jq -Rs '.')"
-	curl -sf -X POST "https://$REPORTING_PROJECT_REF.supabase.co/rest/v1/error_logs" \
-		-H "apikey: ${REPORTING_ANON_KEY}" \
-		-H 'Content-type: application/json' \
-		-d "$BODY"
+	tail -c 1048576 "${LOG_FILE}" |
+		jq -Rs --arg ref "${DERIVED_REF}" --arg step completion '{ref: $ref, step: $step, content: .}' |
+		curl -sf --max-time 60 -X POST "https://${REPORTING_PROJECT_REF}.supabase.co/rest/v1/error_logs" \
+			-H "apikey: ${REPORTING_ANON_KEY}" \
+			-H 'Content-type: application/json' \
+			--data-binary @-
 }
 
 # Aborts if / has less than required_kb free. Nix realizes the new pg_upgrade

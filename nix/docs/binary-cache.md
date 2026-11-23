@@ -48,13 +48,14 @@ extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7V
 Restart the nix daemon to load the new config:
 
 **On macOS:**
+
 ```bash
 sudo launchctl stop org.nixos.nix-daemon
 sudo launchctl start org.nixos.nix-daemon
 ```
 
 **On Linux (systemd):**
+
 ```bash
 sudo systemctl restart nix-daemon
 ```
-

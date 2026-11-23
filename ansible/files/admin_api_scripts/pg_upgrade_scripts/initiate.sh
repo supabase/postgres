@@ -10,9 +10,11 @@
 # Running an upgrade with these extensions enabled will result in errors due to
 # them depending on regtypes referencing system OIDs or outdated library files.
 EXTENSIONS_TO_DISABLE=(
+	"amcheck" # avoids leaving 1.4-only functions ungranted after the version bump
+	"pg_backtrace"
 	"pg_graphql"
 	"pg_stat_monitor"
-	"pg_backtrace"
+	"plpgsql_check" # old versioned library clashes with the preloaded new one
 )
 
 PG14_EXTENSIONS_TO_DISABLE=(
@@ -36,6 +38,7 @@ IS_NIX_UPGRADE=${IS_NIX_UPGRADE:-}
 IS_NIX_BASED_SYSTEM="false"
 
 PGVERSION=$1
+POSTGRES_SHARE_DIR="/usr/share/postgresql/${PGVERSION}"
 MOUNT_POINT="/data_migration"
 LOG_FILE="/var/log/pg-upgrade-initiate.log"
 
@@ -57,6 +60,8 @@ PGBINOLD="/usr/lib/postgresql/bin"
 PG_UPGRADE_BIN_DIR="/tmp/pg_upgrade_bin/$PGVERSION"
 NIX_INSTALLER_PATH="/tmp/persistent/nix-installer"
 NIX_INSTALLER_PACKAGE_PATH="$NIX_INSTALLER_PATH.tar.gz"
+NIX_VERSION="2.35.3"
+NIX_OFFICIAL_INSTALLER_SHA256="69d0fe8fba8fe88f94c98b09964691ac9950abc7ecbf2ba861dc0533cfd901e9"
 
 if [ -L "$PGBINOLD/pg_upgrade" ]; then
 	BINARY_PATH=$(readlink -f "$PGBINOLD/pg_upgrade")
@@ -83,7 +88,13 @@ fi
 
 OLD_BOOTSTRAP_USER=$(run_sql -A -t -c "select rolname from pg_authid where oid = 10;")
 
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/start_guard.sh"
+
+CLEANUP_STARTED=""
+
 cleanup() {
+	CLEANUP_STARTED=1
 	UPGRADE_STATUS=${1:-"failed"}
 	EXIT_CODE=${?:-0}
 
@@ -104,26 +115,34 @@ cleanup() {
 		enable_conflicting_timers || log "WARNING: failed to re-enable one or more timers; check 'systemctl list-timers --all' on this host"
 	fi
 
+	# Put the old share dir back before the start block is lifted, so a start that
+	# slips in right after it cannot see the new version's files.
+	if [ -L "$POSTGRES_SHARE_DIR" ]; then
+		rm "$POSTGRES_SHARE_DIR" || log "WARNING: failed to remove the postgres share symlink"
+
+		if [ -f "${POSTGRES_SHARE_DIR}.bak" ]; then
+			mv "${POSTGRES_SHARE_DIR}.bak" "$POSTGRES_SHARE_DIR" || log "WARNING: failed to restore the postgres share directory"
+		fi
+
+		if [ -d "${POSTGRES_SHARE_DIR}.bak" ]; then
+			mv "${POSTGRES_SHARE_DIR}.bak" "$POSTGRES_SHARE_DIR" || log "WARNING: failed to restore the postgres share directory"
+		fi
+	fi
+
+	# Same reasoning as the timers: lift the start block before anything else that
+	# can fail under set -e, or the restart below would be refused.
+	unblock_postgres_start || log "WARNING: failed to lift the postgres start block; check /run/systemd/system/postgresql.service.d"
+
+	# ship $LOG_FILE content to reporting project (see common.sh)
+	ship_logs "$LOG_FILE" || true
+
 	if [ -d "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" ]; then
 		log "Copying pg_upgrade output to /var/log"
 		cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/ || true
 		chown -R postgres:postgres /var/log/pg_upgrade_output.d/
 		chmod -R 0750 /var/log/pg_upgrade_output.d/
-		ship_logs "$LOG_FILE" || true
 		tail -n +1 /var/log/pg_upgrade_output.d/*/* >/var/log/pg_upgrade_output.d/pg_upgrade.log || true
 		ship_logs "/var/log/pg_upgrade_output.d/pg_upgrade.log" || true
-	fi
-
-	if [ -L "/usr/share/postgresql/${PGVERSION}" ]; then
-		rm "/usr/share/postgresql/${PGVERSION}"
-
-		if [ -f "/usr/share/postgresql/${PGVERSION}.bak" ]; then
-			mv "/usr/share/postgresql/${PGVERSION}.bak" "/usr/share/postgresql/${PGVERSION}"
-		fi
-
-		if [ -d "/usr/share/postgresql/${PGVERSION}.bak" ]; then
-			mv "/usr/share/postgresql/${PGVERSION}.bak" "/usr/share/postgresql/${PGVERSION}"
-		fi
 	fi
 
 	log "Restarting postgresql"
@@ -181,6 +200,29 @@ EOF
 	fi
 }
 
+# EXIT trap: any exit that did not go through cleanup() (set -u abort, TERM/INT)
+# still restores the source, since step 9 left it stopped and disabled. If
+# cleanup() already ran (or died part way under set -e), only make sure the
+# start block is gone.
+on_exit() {
+	local exit_code=$?
+	trap - ERR
+	set +e
+	if [ -z "$CLEANUP_STARTED" ]; then
+		(
+			trap - ERR EXIT
+			set -e
+			cleanup failed
+		)
+		if [ "$exit_code" -eq 0 ]; then
+			exit_code=1
+		fi
+	fi
+	unblock_postgres_start || log "WARNING: failed to lift the postgres start block; check /run/systemd/system/postgresql.service.d"
+
+	exit "$exit_code"
+}
+
 function handle_extensions {
 	if [ -z "$IS_CI" ]; then
 		retry 5 systemctl restart postgresql
@@ -203,6 +245,13 @@ ALTER SYSTEM SET jit = off;
 SELECT pg_reload_conf();
 EOF
 
+	# Rescope before dropping extensions: the fixed triggers are carried into the new
+	# cluster by pg_upgrade, so both the post-upgrade re-enable and the failure-path
+	# re-enable below fire them. Fail-soft: a broken rescope should not block the
+	# upgrade — but retry first, since a skipped rescope means the recreation of
+	# these extensions silently loses their wiring.
+	retry 3 rescope_extension_event_triggers || log "WARNING: failed to rescope extension event triggers"
+
 	# Disable extensions if they're enabled
 	# Generate SQL script to re-enable them after upgrade
 	for EXTENSION in "${EXTENSIONS_TO_DISABLE[@]}"; do
@@ -224,6 +273,11 @@ EOF
 }
 
 function initiate_upgrade {
+	# This runs in a background subshell, where the parent's traps do not apply.
+	trap on_exit EXIT
+	trap 'exit 143' TERM
+	trap 'exit 130' INT
+
 	# Before anything destructive: no || true here, a timer firing mid-upgrade is
 	# exactly what this guards against, and failing now leaves the project untouched.
 	# Interrupting an apt-daily run can leave dpkg half-configured; step 2's
@@ -322,11 +376,15 @@ function initiate_upgrade {
 							--extra-conf "trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI= cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY="
 					else
 						log "1.1.1. Installing Nix using the official installer"
-						sh <(curl -L https://releases.nixos.org/nix/nix-2.34.6/install) --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
+						NIX_OFFICIAL_INSTALLER=$(mktemp)
+						curl -fsSL "https://releases.nixos.org/nix/nix-${NIX_VERSION}/install" -o "$NIX_OFFICIAL_INSTALLER"
+						echo "${NIX_OFFICIAL_INSTALLER_SHA256}  ${NIX_OFFICIAL_INSTALLER}" | sha256sum -c -
+						sh "$NIX_OFFICIAL_INSTALLER" --yes --daemon --nix-extra-conf-file /dev/stdin <<EXTRA_NIX_CONF
 extra-experimental-features = nix-command flakes
 extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
 extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
 EXTRA_NIX_CONF
+						rm -f "$NIX_OFFICIAL_INSTALLER"
 					fi
 				else
 					log "1.1. Nix is installed; moving on."
@@ -375,9 +433,10 @@ EXTRA_NIX_CONF
 
 		log "Store path: $STORE_PATH"
 
-		# Realize the closure from the binary cache.
+		# Realize the closure from the binary cache and root it in the pg-upgrade
+		# profile, so a GC can't remove it mid-upgrade.
 		#
-		# nix-store -r can stall indefinitely on a dropped S3 connection without
+		# The fetch can stall indefinitely on a dropped S3 connection without
 		# erroring out (its own download timeout doesn't reliably fire), so guard each
 		# attempt with a timeout and retry. Each path downloads atomically: already-
 		# registered paths are skipped on retry but an in-flight NAR restarts from
@@ -392,14 +451,14 @@ EXTRA_NIX_CONF
 
 		nix_store_ok="false"
 		for attempt in 1 2 3; do
-			if timeout -k 10s 120s nix-store -r "$STORE_PATH"; then
+			if timeout -k 10s 120s nix-env --option stalled-download-timeout 60 --profile /nix/var/nix/profiles/pg-upgrade --set "$STORE_PATH"; then
 				nix_store_ok="true"
 				break
 			fi
 			if [ "$attempt" -lt 3 ]; then
-				log "WARNING: nix-store -r attempt ${attempt}/3 for $STORE_PATH failed or stalled (>=120s + up to 10s kill grace); retrying"
+				log "WARNING: nix-env --set attempt ${attempt}/3 for $STORE_PATH failed or stalled (>=120s + up to 10s kill grace); retrying"
 			else
-				log "ERROR: nix-store -r failed after 3 attempts for $STORE_PATH"
+				log "ERROR: nix-env --set failed after 3 attempts for $STORE_PATH"
 			fi
 		done
 		[ "$nix_store_ok" = "true" ]
@@ -504,7 +563,7 @@ EXTRA_NIX_CONF
 	if [ -f "$MOUNT_POINT/pgsodium_root.key" ]; then
 		cp "$MOUNT_POINT/pgsodium_root.key" /etc/postgresql-custom/pgsodium_root.key
 		chown postgres:postgres /etc/postgresql-custom/pgsodium_root.key
-		chmod 600 /etc/postgresql-custom/pgsodium_root.key
+		chmod 640 /etc/postgresql-custom/pgsodium_root.key
 	fi
 
 	log "7. Disabling extensions and generating post-upgrade script"
@@ -530,21 +589,6 @@ EXTRA_NIX_CONF
 		export LD_LIBRARY_PATH="${PGLIBNEW}"
 	fi
 
-	log "9. Creating new data directory, initializing database"
-	chown -R postgres:postgres "$MOUNT_POINT/"
-	rm -rf "${PGDATANEW:?}/"
-
-	if [ "$IS_NIX_UPGRADE" = "true" ]; then
-		if [[ ${PGVERSION%%.*} -ge 16 ]]; then
-			LC_ALL=en_US.UTF-8 LC_CTYPE=en_US.UTF-8 LC_COLLATE=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $PGBINNEW/initdb --allow-group-access $CHECKSUM_FLAG --encoding=$SERVER_ENCODING --locale-provider=icu --icu-locale=en_US.UTF-8 -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
-		else
-			LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $PGBINNEW/initdb --allow-group-access $CHECKSUM_FLAG --encoding=$SERVER_ENCODING --lc-collate=$SERVER_LC_COLLATE --lc-ctype=$SERVER_LC_CTYPE -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
-		fi
-	else
-		su -c "$PGBINNEW/initdb --allow-group-access $CHECKSUM_FLAG -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
-
-	fi
-
 	# This line avoids the need to supply the supabase_admin password on the old
 	# instance, since pg_upgrade connects to the db as supabase_admin using unix
 	# sockets, which is gated behind scram-sha-256 per pg_hba.conf.j2. The new
@@ -566,6 +610,10 @@ $(cat /etc/postgresql/pg_hba.conf)" >/etc/postgresql/pg_hba.conf
 	if [[ ${OLD_PGVERSION%%.*} -le 15 && ${PGVERSION%%.*} -ge 16 ]]; then
 		sed -i '/^db_user_namespace/d' "$TMP_CONFIG"
 	fi
+
+	# The site profile link (/nix/var/nix/profiles/site/lib/postgresql) holds extensions (supautils) built for the old major version, which the new cluster can't load.
+	# Without this config both clusters load the copies bundled with their own postgres package from $libdir.
+	sed -i '/^dynamic_library_path/d' "$TMP_CONFIG"
 
 	chown postgres:postgres "$TMP_CONFIG"
 
@@ -590,13 +638,7 @@ EOF
 		UPGRADE_COMMAND=". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $UPGRADE_COMMAND"
 	fi
 
-	if [[ ${PGVERSION%%.*} -ge 16 ]]; then
-		GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND --check" -s "$SHELL" postgres
-	else
-		GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND --check" -s "$SHELL" postgres
-	fi
-
-	log "10. Stopping postgres; running pg_upgrade"
+	log "9. Stopping SOURCE postgres and ensuring it says stopped"
 	# Extra work to ensure postgres is actually stopped
 	#  Mostly needed for PG12 projects with odd systemd unit behavior
 	if [ -z "$IS_CI" ]; then
@@ -607,19 +649,102 @@ EOF
 		sleep 3
 		systemctl stop postgresql
 
+		block_postgres_start
 	else
 		CI_stop_postgres
 	fi
 
-	# Start the old PostgreSQL instance with version-specific options
+	#CHECKSUM_FLAG="--data-checksums" if the SOURCE cluster has checksums
+	#CHECKSUM_FLAG=""                 if the SOURCE doesn't have them (yet)
+	#                                 in this case the following code adds them
+
+	if [[ $CHECKSUM_FLAG == "" ]]; then
+
+		# old db hasn't got checksum, we will enable it its overall size
+		# (${PGDATAOLD}) is <= 20 Gb
+
+		# 20 gb = 20 x 1024 x 1024 = 20971520
+		MAX_SIZE=$((20 * 1024 * 1024))
+
+		PGDATAOLD_SIZE=$(du -skL "${PGDATAOLD}" | cut -f1)
+
+		if [[ $PGDATAOLD_SIZE -le $MAX_SIZE ]]; then
+
+			log "9.1. adding checksums to SOURCE PG (<20 Gb)"
+
+			# pg_checksums -e does not verify existing pages. A run over
+			# MAX_DURATION won't fail the upgrade, and let the database without
+			# checksums enabled
+
+			MAX_DURATION="10m"
+			KILL_AFTER="15s"
+			STATUS=0
+			timeout -k "${KILL_AFTER}" "${MAX_DURATION}" "${PGBINOLD}"/pg_checksums -e "${PGDATAOLD}" || STATUS=$?
+
+			case $STATUS in
+			0)
+				log "adding checksums SUCCEEDED."
+				CHECKSUM_FLAG="--data-checksums"
+				;;
+			124 | 137)
+				log "adding checksums FAILED. Max time (${MAX_DURATION}) reached!"
+				CHECKSUM_FLAG=""
+				;;
+			*)
+				log "adding checksums FAILED with error code ${STATUS}!"
+				CHECKSUM_FLAG=""
+				;;
+			esac
+
+		else
+
+			log "9.1. did *not* add checksum to SOURCE PG: size $PGDATAOLD_SIZE > 20 Gb!"
+
+		fi
+
+	else
+
+		log "9.1. checksums already present on SOURCE"
+
+	fi
+
+	log "10. Creating new data directory, initializing database"
+	chown -R postgres:postgres "$MOUNT_POINT/"
+	rm -rf "${PGDATANEW:?}/"
+
+	if [ "$IS_NIX_UPGRADE" = "true" ]; then
+		if [[ ${PGVERSION%%.*} -ge 16 ]]; then
+			LC_ALL=en_US.UTF-8 LC_CTYPE=en_US.UTF-8 LC_COLLATE=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $PGBINNEW/initdb --allow-group-access $CHECKSUM_FLAG --encoding=$SERVER_ENCODING --locale-provider=icu --icu-locale=en_US.UTF-8 -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
+		else
+			LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -c ". /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh && $PGBINNEW/initdb --allow-group-access $CHECKSUM_FLAG --encoding=$SERVER_ENCODING --lc-collate=$SERVER_LC_COLLATE --lc-ctype=$SERVER_LC_CTYPE -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
+		fi
+	else
+		su -c "$PGBINNEW/initdb --allow-group-access $CHECKSUM_FLAG -L $PGSHARENEW -D $PGDATANEW/ --username=supabase_admin" -s "$SHELL" postgres
+	fi
+
+	log "11. pg_upgrade --check(ing) compatibility of old/new clusters"
+	if [[ ${PGVERSION%%.*} -ge 16 ]]; then
+		GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND --check" -s "$SHELL" postgres
+	else
+		GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND --check" -s "$SHELL" postgres
+	fi
+
+	start_pid_lock_watcher
+
+	# Start the pg_upgrade from PGDATAOLD to PGDATANEW..
+	log "12. pg_upgrade PGDATAOLD to PGDATANEW"
 	if [[ ${PGVERSION%%.*} -ge 16 ]]; then
 		GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND" -s "$SHELL" postgres
 	else
 		GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins LC_ALL=en_US.UTF-8 LC_CTYPE=$SERVER_LC_CTYPE LC_COLLATE=$SERVER_LC_COLLATE LANGUAGE=en_US.UTF-8 LANG=en_US.UTF-8 LOCALE_ARCHIVE=/usr/lib/locale/locale-archive su -pc "$UPGRADE_COMMAND" -s "$SHELL" postgres
 	fi
 
+	if ! assert_source_stayed_down; then
+		false # not exit: let the ERR trap run cleanup
+	fi
+
 	# copying custom configurations
-	log "11. Copying custom configurations"
+	log "13. Copying custom configurations"
 	mkdir -p "$MOUNT_POINT/conf"
 	cp -R /etc/postgresql-custom/* "$MOUNT_POINT/conf/"
 	# removing supautils config as to allow the latest one provided by the latest image to be used
@@ -630,12 +755,12 @@ EOF
 	rm -f "$MOUNT_POINT/conf/wal-g.conf"
 
 	# copy sql files generated by pg_upgrade
-	log "12. Copying sql files generated by pg_upgrade"
+	log "14. Copying sql files generated by pg_upgrade"
 	mkdir -p "$MOUNT_POINT/sql"
 	cp /tmp/pg_upgrade/*.sql "$MOUNT_POINT/sql/" || true
 	chown -R postgres:postgres "$MOUNT_POINT/sql/"
 
-	log "13. Cleaning up"
+	log "15. Cleaning up"
 	cleanup "complete"
 }
 

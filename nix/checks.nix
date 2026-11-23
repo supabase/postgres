@@ -12,12 +12,15 @@
         psql_15 = self'.packages."psql_15/bin";
         psql_17 = self'.packages."psql_17/bin";
         psql_orioledb-17 = self'.packages."psql_orioledb-17/bin";
+        inherit (self'.packages) supabase-groonga;
         inherit (self.supabase) defaults;
       };
       bashlog = builtins.fetchurl {
         url = "https://raw.githubusercontent.com/Zordrak/bashlog/master/log.sh";
         sha256 = "1vrjcbzls0ba2qkg7ffddz2gxqn2rlj3wyvril2gz0mfi89y9vk9";
       };
+
+      inherit (self'.packages) getkey-script;
     in
     {
       checks =
@@ -27,91 +30,31 @@
           # deadnix: skip
           makeCheckHarness =
             pgpkg:
-            # legacyPkgName: the name used in legacyPackages (e.g., "psql_17" or "psql_17_slim")
             {
               isCliVariant ? false,
-              legacyPkgName ? null,
+              isSlim ? false,
             }:
             let
+              isOrioleDB = lib.strings.hasPrefix "orioledb-" pgpkg.version;
               pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
               inherit (self'.packages) pg_regress pg_isolation_regress;
-              getkey-script = pkgs.stdenv.mkDerivation {
-                name = "pgsodium-getkey";
-                buildCommand = ''
-                  mkdir -p $out/bin
-                  cat > $out/bin/pgsodium-getkey << 'EOF'
-                  #!${pkgs.bash}/bin/bash
-                  set -euo pipefail
-
-                  TMPDIR_BASE=$(mktemp -d)
-
-                  KEY_DIR="''${PGSODIUM_KEY_DIR:-$TMPDIR_BASE/pgsodium}"
-                  KEY_FILE="$KEY_DIR/pgsodium.key"
-
-                  if ! mkdir -p "$KEY_DIR" 2>/dev/null; then
-                    echo "Error: Could not create key directory $KEY_DIR" >&2
-                    exit 1
-                  fi
-                  chmod 1777 "$KEY_DIR"
-
-                  if [[ ! -f "$KEY_FILE" ]]; then
-                    if ! (dd if=/dev/urandom bs=32 count=1 2>/dev/null | od -A n -t x1 | tr -d ' \n' > "$KEY_FILE"); then
-                      if ! (openssl rand -hex 32 > "$KEY_FILE"); then
-                        echo "00000000000000000000000000000000" > "$KEY_FILE"
-                        echo "Warning: Using fallback key" >&2
-                      fi
-                    fi
-                    chmod 644 "$KEY_FILE"
-                  fi
-
-                  if [[ -f "$KEY_FILE" && -r "$KEY_FILE" ]]; then
-                    cat "$KEY_FILE"
-                  else
-                    echo "Error: Cannot read key file $KEY_FILE" >&2
-                    exit 1
-                  fi
-                  EOF
-                  chmod +x $out/bin/pgsodium-getkey
-                '';
-              };
-
-              # Get the major version for filtering
-              majorVersion =
-                let
-                  version = builtins.trace "pgpkg.version is: ${pgpkg.version}" pgpkg.version;
-                  isOrioledbMatch = builtins.match "^17_[0-9]+$" version != null;
-                  isSeventeenMatch = builtins.match "^17[.][0-9]+$" version != null;
-                  result =
-                    if isOrioledbMatch then
-                      "orioledb-17"
-                    else if isSeventeenMatch then
-                      "17"
-                    else
-                      "15";
-                in
-                builtins.trace "Major version result: ${result}" result;
-
-              # Determine the legacy package name for selecting extensions
-              effectiveLegacyPkgName = if legacyPkgName != null then legacyPkgName else "psql_${majorVersion}";
-
-              # Select the appropriate pgroonga package for this PostgreSQL version
-              pgroonga = self'.legacyPackages.${effectiveLegacyPkgName}.exts.pgroonga;
+              pgroonga = self'.legacyPackages."psql_${pgpkg.version}".exts.pgroonga;
+              supautils = self'.legacyPackages."psql_${pgpkg.version}".exts.supautils;
 
               # Use different ports to allow parallel test runs
               # slim packages get their own ports to avoid conflicts
-              isSlim = lib.hasSuffix "_slim" effectiveLegacyPkgName;
               pgPort =
-                if (majorVersion == "17" && isSlim) then
+                if (pgpkg.version == "17" && isSlim) then
                   "5538"
-                else if (majorVersion == "15" && isSlim) then
+                else if (pgpkg.version == "15" && isSlim) then
                   "5539"
-                else if (majorVersion == "orioledb-17" && isSlim) then
+                else if (isOrioleDB && isSlim) then
                   "5540"
-                else if (majorVersion == "17" && isCliVariant) then
+                else if (pgpkg.version == "17" && isCliVariant) then
                   "5541"
-                else if (majorVersion == "17") then
+                else if (pgpkg.version == "17") then
                   "5535"
-                else if (majorVersion == "15") then
+                else if (pgpkg.version == "15") then
                   "5536"
                 else
                   "5537";
@@ -134,7 +77,6 @@
                   "pg_tle"
                   "plan_filter"
                   "supabase_vault"
-                  "supautils"
                 )
 
                 # Extract available extensions from receipt
@@ -165,24 +107,22 @@
                 };
               };
 
-              getVersionArg =
-                pkg:
-                let
-                  name = pkg.version;
-                in
-                # Check orioledb first since "17_15" would match "17.*" pattern
-                if builtins.match "17_[0-9]+" name != null then
-                  "orioledb-17"
-                else if builtins.match "15.*" name != null then
-                  "15"
-                else if builtins.match "17.*" name != null then
-                  "17"
-                else
-                  throw "Unsupported PostgreSQL version: ${name}";
-
-              # Tests to skip for OrioleDB (not compatible with OrioleDB storage)
-              orioledbSkipTests = [
+              # Tests to skip for OrioleDB.
+              orioleDBSkipTests = [
                 "index_advisor" # index_advisor doesn't support OrioleDB tables
+
+                # OrioleDB still uses PostgreSQL 17.11.
+                # drop these skips when it includes the 17.12 fixes.
+                "alter_column_type_rowtype_deps"
+                "bpchar_btree_dedup"
+                "cast_function_execute_privilege"
+                "drop_owned_rls_policy"
+                "function_def_target_alias"
+                "jsonpath_gin_lookup"
+                "partition_prune_range"
+                "to_char_v_overflow"
+                "upsert_rls_conflict_where"
+                "upsert_view_visibility"
               ];
 
               # Helper function to filter SQL files based on version
@@ -190,25 +130,25 @@
                 version: dir:
                 let
                   files = builtins.readDir dir;
-                  # Get list of OrioleDB-specific test basenames , then strip the orioledb prefix from them
-                  orioledbVariants = pkgs.lib.pipe files [
+                  # Get list of OrioleDB-specific test basenames, then strip the orioledb prefix from them
+                  orioleDBVariants = pkgs.lib.pipe files [
                     builtins.attrNames
                     (builtins.filter (n: builtins.match "z_orioledb-17_.*\\.sql" n != null))
                     (map (n: builtins.substring 14 (pkgs.lib.stringLength n - 18) n)) # Remove "z_orioledb-17_" prefix (14 chars) and ".sql" suffix (4 chars)
                   ];
-                  hasOrioledbVariant = basename: builtins.elem basename orioledbVariants;
+                  hasOrioleDBVariant = basename: builtins.elem basename orioleDBVariants;
                   isValidFile =
                     name:
                     let
                       isVersionSpecific = builtins.match "z_.*" name != null;
                       basename = builtins.substring 0 (pkgs.lib.stringLength name - 4) name; # Remove .sql
                       # Skip tests that don't work with OrioleDB
-                      isSkippedForOrioledb = version == "orioledb-17" && builtins.elem basename orioledbSkipTests;
+                      isSkippedForOrioleDB = isOrioleDB && builtins.elem basename orioleDBSkipTests;
                       matchesVersion =
-                        if isSkippedForOrioledb then
+                        if isSkippedForOrioleDB then
                           false
                         else if isVersionSpecific then
-                          if version == "orioledb-17" then
+                          if isOrioleDB then
                             builtins.match "z_orioledb-17_.*" name != null
                           else if version == "17" then
                             builtins.match "z_17_.*" name != null
@@ -216,7 +156,7 @@
                             builtins.match "z_15_.*" name != null
                         else
                         # For common tests: exclude if OrioleDB variant exists and we're running OrioleDB
-                        if version == "orioledb-17" && hasOrioledbVariant basename then
+                        if isOrioleDB && hasOrioleDBVariant basename then
                           false
                         else
                           true;
@@ -226,7 +166,7 @@
                 pkgs.lib.filterAttrs (name: _: isValidFile name) files;
 
               # Filter SQL test files
-              filteredSqlTests = filterTestFiles majorVersion ./tests/sql;
+              filteredSqlTests = filterTestFiles pgpkg.version ./tests/sql;
 
               # Tests to skip for CLI variants (require extensions not in CLI)
               cliSkipTests = [
@@ -240,6 +180,7 @@
                 "pg_partman"
                 "pg_repack"
                 "pg_tle"
+                "pg_tle_dependencies"
                 "pgtap"
                 "pgmq"
                 "pgroonga"
@@ -255,6 +196,12 @@
                 "pg_net_worker_privileges" # needs the authenticated/postgres roles from the full migrations, not present in the CLI prime file
                 "pg_cron_trigger_privileges" # needs pg_cron + the postgres role and cron-schema grants from the full migrations, not in the CLI prime file
                 "supautils_restrict_versions" # needs the postgres role + primed hstore from the full migrations/prime, not present in the CLI variant
+                "amcheck" # needs the postgres/anon/authenticated/service_role roles and the default privileges from the full migrations, plus amcheck primed by prime.sql
+                "output_plugin_libraries" # needs wal_level=logical + logical-decoding infra, not exercised in the CLI variant
+                "btree_gist_nan" # needs btree_gist, not in the CLI prime file
+                "hstore_copy_binary" # needs hstore
+                "bpchar_btree_dedup" # needs pageinspect, not in the CLI prime file
+                "pgrst_watch_triggers" # needs dblink, not in the CLI prime file
                 # Version-specific extension tests
                 "z_17_ext_interface"
                 "z_17_pg_stat_monitor"
@@ -280,7 +227,9 @@
               # Concurrency/isolation specs run via pg_isolation_regress (the stock
               # PostgreSQL isolation tester). Specs live in tests/isolation/specs/,
               # expected output in tests/isolation/expected/. Add new spec names here.
-              isolationSpecList = [ "sample_isolation" ];
+              isolationSpecList = [
+                "merge_serialization"
+              ];
             in
             pkgs.writeShellApplication rec {
               name = "postgres-${pgpkg.version}-check-harness";
@@ -289,24 +238,23 @@
                 "pipefail"
               ];
               runtimeInputs = with pkgs; [
-                coreutils
                 bash
+                coreutils
+                getkey-script
+                netcat
                 perl
-                pgpkg
+                pg_isolation_regress
                 pg_prove
                 pg_regress
-                pg_isolation_regress
+                pgpkg
                 procps
-                start-postgres-server-bin
-                which
-                getkey-script
-                supabase-groonga
                 python3
-                netcat
+                start-postgres-server-bin
+                self'.packages.supabase-groonga
+                which
               ];
 
               text = ''
-
                 #shellcheck disable=SC1091
                 source ${bashlog}
                 #shellcheck disable=SC1091
@@ -386,7 +334,7 @@
                 export HTTP_MOCK_PORT
 
                 #First we need to create a generic pg cluster for pgtap tests and run those
-                export GRN_PLUGINS_DIR=${pkgs.supabase-groonga}/lib/groonga/plugins
+                export GRN_PLUGINS_DIR=${self'.packages.supabase-groonga}/lib/groonga/plugins
                 PGTAP_CLUSTER=$(mktemp -d)
                 log info "Creating temporary PostgreSQL cluster at $PGTAP_CLUSTER"
                 log_cmd initdb --locale=C --username=supabase_admin -D "$PGTAP_CLUSTER"
@@ -398,37 +346,48 @@
                 substitute ${./tests/postgresql.conf.in} "$PGTAP_CLUSTER"/postgresql.conf \
                   --subst-var-by PGSODIUM_GETKEY_SCRIPT "${getkey-script}/bin/pgsodium-getkey" \
                   --subst-var-by PRELOAD_LIBRARIES "$PRELOAD_LIBRARIES"
-                echo "listen_addresses = '127.0.0.1'" >> "$PGTAP_CLUSTER"/postgresql.conf
-                echo "port = ${pgPort}" >> "$PGTAP_CLUSTER"/postgresql.conf
-                echo "host all all 127.0.0.1/32 trust" >> "$PGTAP_CLUSTER/pg_hba.conf"
-                log info "Checking shared_preload_libraries setting:"
-                log info "$(grep -rn "shared_preload_libraries" "$PGTAP_CLUSTER"/postgresql.conf)"
+
+                # Check if postgresql.conf exists
+                if [ ! -f "$PGTAP_CLUSTER/postgresql.conf" ]; then
+                  log error "postgresql.conf is missing!"
+                  exit 1
+                fi
+
+                {
+                  echo "listen_addresses = '127.0.0.1'"
+                  echo "port = ${pgPort}"
+
+                  echo "dynamic_library_path = '${supautils}/lib:\$libdir'"
+                  echo "output_plugin_libraries = 'pgoutput, test_decoding, wal2json'"
+                  echo "session_preload_libraries = 'supautils'"
+                } >> "$PGTAP_CLUSTER"/postgresql.conf
+
                 # Configure OrioleDB if running orioledb-17 check
-                #shellcheck disable=SC2193
-                if [[ "${pgpkg.version}" == *"_"* ]]; then
+                if ${lib.boolToString isOrioleDB}; then
                   log info "Configuring OrioleDB..."
+
                   # Add orioledb to shared_preload_libraries
                   perl -pi -e "s/(shared_preload_libraries = ')/\$1orioledb, /" "$PGTAP_CLUSTER/postgresql.conf"
                   log info "OrioleDB added to shared_preload_libraries"
                 fi
 
-                # Check if postgresql.conf exists
-                if [ ! -f "$PGTAP_CLUSTER/postgresql.conf" ]; then
-                    log error "postgresql.conf is missing!"
-                    exit 1
-                fi
+                log info "Checking shared_preload_libraries setting:"
+                log info "$(grep -rn "shared_preload_libraries" "$PGTAP_CLUSTER"/postgresql.conf)"
+
+                log info "Configuring local auth"
+                echo "host all all 127.0.0.1/32 trust" >> "$PGTAP_CLUSTER/pg_hba.conf"
 
                 # PostgreSQL startup
                 if [[ "$(uname)" == "Darwin" ]]; then
-                log_cmd pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER/postgresql.log" -o "-k $PGTAP_CLUSTER -p ${pgPort} -d 5" start
+                  log_cmd pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER/postgresql.log" -o "-k $PGTAP_CLUSTER -p ${pgPort} -d 5" start
                 else
-                mkdir -p "$PGTAP_CLUSTER/sockets"
-                log_cmd pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER/postgresql.log" -o "-k $PGTAP_CLUSTER/sockets -p ${pgPort} -d 5" start
+                  mkdir -p "$PGTAP_CLUSTER/sockets"
+                  log_cmd pg_ctl -D "$PGTAP_CLUSTER" -l "$PGTAP_CLUSTER/postgresql.log" -o "-k $PGTAP_CLUSTER/sockets -p ${pgPort} -d 5" start
                 fi || {
-                log error "pg_ctl failed to start PostgreSQL"
-                log error "Contents of postgresql.log:"
-                cat "$PGTAP_CLUSTER"/postgresql.log
-                exit 1
+                  log error "pg_ctl failed to start PostgreSQL"
+                  log error "Contents of postgresql.log:"
+                  cat "$PGTAP_CLUSTER"/postgresql.log
+                  exit 1
                 }
 
                 log info "Waiting for PostgreSQL to be ready..."
@@ -438,8 +397,7 @@
                 log_cmd createdb -p ${pgPort} -h localhost --username=supabase_admin testing
 
                 # Create orioledb extension if running orioledb-17 check (before prime.sql)
-                #shellcheck disable=SC2193
-                if [[ "${pgpkg.version}" == *"_"* ]]; then
+                if ${lib.boolToString isOrioleDB}; then
                   log info "Creating orioledb extension..."
                   log_cmd psql -p ${pgPort} -h localhost --username=supabase_admin -d testing -c "CREATE EXTENSION IF NOT EXISTS orioledb;"
                 fi
@@ -496,7 +454,7 @@
 
                 log info "Starting PostgreSQL server for pg_regress tests"
                 unset GRN_PLUGINS_DIR
-                if ! log_cmd ${start-postgres-server-bin}/bin/start-postgres-server ${getVersionArg pgpkg} --daemonize; then
+                if ! log_cmd ${start-postgres-server-bin}/bin/start-postgres-server ${pgpkg.version} --daemonize; then
                   log error "Failed to start PostgreSQL server for pg_regress tests"
                   exit 1
                 fi
@@ -504,8 +462,7 @@
                 check_postgres_ready
 
                 # Create orioledb extension if running orioledb-17 check (before prime.sql)
-                #shellcheck disable=SC2193
-                if [[ "${pgpkg.version}" == *"_"* ]]; then
+                if ${lib.boolToString isOrioleDB}; then
                   log info "Creating orioledb extension for pg_regress tests..."
                   log_cmd psql -p ${pgPort} -h localhost --no-password --username=supabase_admin -d postgres -c "CREATE EXTENSION IF NOT EXISTS orioledb;"
                 fi
@@ -570,12 +527,10 @@
                 # running server as pg_regress (--use-existing). These specs target
                 # core/heap + contrib concurrency behaviour. Skipped on:
                 #   - CLI variants: portable build runs only a test subset.
-                #   - orioledb ships its own isolation suite for its storage-engine 
-                #     concurrency semantics.
-                #shellcheck disable=SC2193
+                #   - orioledb ships its own isolation suite for its storage-engine concurrency semantics.
                 if ${lib.boolToString isCliVariant}; then
                   log info "CLI variant detected - skipping isolation tests"
-                elif [[ "${pgpkg.version}" == *"_"* ]]; then
+                elif ${lib.boolToString isOrioleDB}; then
                   log info "orioledb variant detected - skipping isolation tests (orioledb has its own isolation suite)"
                 else
                   log info "Running pg_isolation_regress tests (${builtins.toString (builtins.length isolationSpecList)} specs)"
@@ -601,41 +556,74 @@
                   log info "CLI variant detected - skipping migrations tests"
                 else
                   log info "Running migrations tests"
-                  log_cmd pg_prove -p ${pgPort} -U supabase_admin -h localhost -d postgres -v ${../migrations/tests}/test.sql
+                  if ! log_cmd pg_prove -p ${pgPort} -U supabase_admin -h localhost -d postgres -v ${../migrations/tests}/test.sql; then
+                    log error "Migrations tests failed"
+                    exit 1
+                  fi
                   log info "Migrations tests completed successfully"
+
+                  log info "Running smoke tests"
+                  if ! log_cmd pg_prove -p ${pgPort} -U supabase_admin -h localhost -d postgres -v ${./tests/smoke}/*.sql; then
+                    log error "Smoke tests failed"
+                    exit 1
+                  fi
+                  log info "Smoke tests completed successfully"
                 fi
               '';
             };
         in
         {
           psql_15 = pkgs.runCommand "run-check-harness-psql-15" { } (
-            lib.getExe (makeCheckHarness self'.packages."psql_15/bin" { legacyPkgName = "psql_15"; })
+            lib.getExe (makeCheckHarness self'.packages."psql_15/bin" { })
           );
           psql_17 = pkgs.runCommand "run-check-harness-psql-17" { } (
-            lib.getExe (makeCheckHarness self'.packages."psql_17/bin" { legacyPkgName = "psql_17"; })
+            lib.getExe (makeCheckHarness self'.packages."psql_17/bin" { })
           );
           psql_orioledb-17 = pkgs.runCommand "run-check-harness-psql-orioledb-17" { } (
-            lib.getExe (
-              makeCheckHarness self'.packages."psql_orioledb-17/bin" { legacyPkgName = "psql_orioledb-17"; }
-            )
+            lib.getExe (makeCheckHarness self'.packages."psql_orioledb-17/bin" { })
           );
           psql_15_slim = pkgs.runCommand "run-check-harness-psql-15-slim" { } (
-            lib.getExe (makeCheckHarness self'.packages."psql_15_slim/bin" { legacyPkgName = "psql_15_slim"; })
+            lib.getExe (makeCheckHarness self'.packages."psql_15_slim/bin" { isSlim = true; })
           );
           psql_17_slim = pkgs.runCommand "run-check-harness-psql-17-slim" { } (
-            lib.getExe (makeCheckHarness self'.packages."psql_17_slim/bin" { legacyPkgName = "psql_17_slim"; })
+            lib.getExe (makeCheckHarness self'.packages."psql_17_slim/bin" { isSlim = true; })
           );
           psql_orioledb-17_slim = pkgs.runCommand "run-check-harness-psql-orioledb-17-slim" { } (
-            lib.getExe (
-              makeCheckHarness self'.packages."psql_orioledb-17_slim/bin" {
-                legacyPkgName = "psql_orioledb-17_slim";
-              }
-            )
+            lib.getExe (makeCheckHarness self'.packages."psql_orioledb-17_slim/bin" { isSlim = true; })
           );
+          pg_upgrade_ship_logs =
+            pkgs.runCommand "pg-upgrade-ship-logs"
+              {
+                nativeBuildInputs = [
+                  pkgs.bash
+                  pkgs.jq
+                  pkgs.coreutils
+                  pkgs.hostname
+                ];
+              }
+              ''
+                bash ${./tests/util/test-ship-logs.sh} ${../ansible/files/admin_api_scripts/pg_upgrade_scripts/common.sh}
+                touch $out
+              '';
           # CLI variant checks
           psql_17_cli = pkgs.runCommand "run-check-harness-psql-17-cli" { } (
             lib.getExe (makeCheckHarness self'.packages."psql_17_cli/bin" { isCliVariant = true; })
           );
+          pg_upgrade_start_guard =
+            let
+              src = lib.fileset.toSource {
+                root = ../.;
+                fileset = lib.fileset.unions [
+                  ../tests/pg_upgrade/test-start-guard.sh
+                  ../ansible/files/admin_api_scripts/pg_upgrade_scripts/initiate.sh
+                  ../ansible/files/admin_api_scripts/pg_upgrade_scripts/start_guard.sh
+                ];
+              };
+            in
+            pkgs.runCommand "pg-upgrade-start-guard-test" { } ''
+              bash ${src}/tests/pg_upgrade/test-start-guard.sh
+              touch $out
+            '';
           # Portable CLI bundle portability checks
           psql_17_cli_portable =
             pkgs.runCommand "psql_17_cli_portable-portability-check"
@@ -939,11 +927,19 @@
             ;
           devShell = self'.devShells.default;
         }
-        // (import ./ext/tests {
-          inherit self;
-          inherit pkgs;
-        })
+        // pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") {
+          schema-15 = self'.packages.schema-check-15;
+          schema-17 = self'.packages.schema-check-17;
+          schema-orioledb-17 = self'.packages.schema-check-orioledb-17;
+        }
+        // pkgs.lib.optionalAttrs pkgs.stdenv.isLinux (
+          import ./ext/tests {
+            inherit self;
+            inherit pkgs;
+          }
+        )
         // pkgs.lib.optionalAttrs (pkgs.stdenv.isLinux) {
+          site = import ./tests/site.nix { inherit self pkgs; };
           inherit (self'.packages)
             postgresql_15_debug
             postgresql_15_src
@@ -953,6 +949,51 @@
             postgresql_17_src
             ;
           psql_orioledb-17_exts_orioledb_debug = self'.legacyPackages.psql_orioledb-17.exts.orioledb.debug;
+          glibc-version-check =
+            let
+              checkScript = pkgs.writers.writeNuBin "check-glibc-version" (
+                builtins.readFile ./tools/check-glibc-version.nu
+              );
+              # supautils is dlopened into already-running legacy pre-nix postgres, so it needs a lower floor than an AMI build.
+              legacyPaths = [
+                self'.legacyPackages.psql_15.exts.supautils
+                self'.legacyPackages.psql_17.exts.supautils
+                self'.legacyPackages."psql_orioledb-17".exts.supautils
+              ];
+              # gatekeeper is dlopened by the base os pam stack; pin it
+              pamPaths = [ self'.packages.gatekeeper ];
+              # ships to user's development machines, not our fleet
+              portablePaths = [ self'.packages.psql_17_cli_portable ];
+            in
+            pkgs.runCommand "glibc-version-check"
+              {
+                nativeBuildInputs = [ pkgs.binutils ];
+                inherit legacyPaths pamPaths portablePaths;
+              }
+              ''
+                # 2.31: Ubuntu 20.04's glibc.
+                ${lib.getExe checkScript} 2.31 $legacyPaths
+                # 2.39: Ubuntu 24.04's glibc.
+                ${lib.getExe checkScript} 2.39 $portablePaths
+                # 2.40: current core floor.
+                ${lib.getExe checkScript} 2.40 $pamPaths
+                touch $out
+              '';
+          collation-version-check =
+            let
+              baseline = "glibc-2.40-66";
+              check =
+                name: actual:
+                lib.assertMsg (actual == baseline) ''
+                  glibc version changed: baseline is ${baseline}, ${name} has ${actual}. Checked
+                  glibc version, not actual collation data, as a proxy for collation drift.
+                  This can change collation versions and require a reindex.
+                  If this bump has been reviewed for collation safety, update the baseline in nix/checks.nix to match.
+                '';
+            in
+            assert check "postgresql_15" self'.packages.postgresql_15.stdenv.cc.libc.name;
+            assert check "postgresql_17" self'.packages.postgresql_17.stdenv.cc.libc.name;
+            pkgs.runCommand "collation-version-check" { } "touch $out";
         };
     };
 }

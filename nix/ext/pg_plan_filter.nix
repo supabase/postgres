@@ -20,7 +20,7 @@ let
 
       src = fetchFromGitHub {
         owner = "pgexperts";
-        repo = pname;
+        repo = "pg_plan_filter";
         inherit rev hash;
       };
 

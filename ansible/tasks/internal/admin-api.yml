@@ -7,7 +7,7 @@
 - name: adminapi - system user
   ansible.builtin.user:
     name: adminapi
-    uid: 1006
+    uid: "{{ uids.adminapi }}"
     group: adminapi
     groups: admin,envoy,gotrue,kong,pgbouncer,postgres,postgrest,root,systemd-journal,vector,wal-g
 
@@ -29,6 +29,7 @@
     src: files/adminapi.sudoers.conf
     dest: /etc/sudoers.d/adminapi
     mode: "0440"
+    validate: "visudo -cf %s"
 
 - name: perms for adminapi
   shell: |
@@ -47,6 +48,13 @@
     src: /tmp/adminapi.tar.gz
     dest: /opt
     owner: adminapi
+
+- name: adminapi - binary ownership
+  file:
+    path: /opt/supabase-admin-api
+    owner: adminapi
+    group: root
+    mode: "0755"
 
 - name: adminapi - config dir
   file:
@@ -73,7 +81,7 @@
     - { file: "prepare.sh" }
     - { file: "pgsodium_getkey.sh" }
     - { file: "common.sh" }
-    - { file: "refresh_collation.sh" }
+    - { file: "start_guard.sh" }
 
 - name: adminapi - create service file
   template:
@@ -82,8 +90,13 @@
 
 - name: adminapi - create service file for commence backup process
   template:
-     src: files/commence-backup.service.j2
-     dest: /etc/systemd/system/commence-backup.service
+    src: files/commence-backup.service.j2
+    dest: /etc/systemd/system/commence-backup.service
+
+- name: adminapi - create service file for commence restore process
+  template:
+    src: files/commence-restore.service.j2
+    dest: /etc/systemd/system/commence-restore.service
 
 - name: UFW - Allow connections to adminapi ports
   ufw:

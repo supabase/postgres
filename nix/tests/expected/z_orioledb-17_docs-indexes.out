@@ -18,7 +18,6 @@ create index idx_persons_age on persons (age);
 create index idx_living_persons_age on persons (age) where deceased is false;
 create index idx_persons_age_desc on persons (age desc nulls last);
 reindex index concurrently idx_persons_age;
-WARNING:  REINDEX CONCURRENTLY is not supported for orioledb tables yet, using a plain REINDEX instead
 reindex table concurrently persons;
-WARNING:  REINDEX CONCURRENTLY is not supported for orioledb tables yet, using a plain REINDEX instead
+NOTICE:  skipping reindex of index "public.persons_pkey" concurrently
 drop table persons cascade;

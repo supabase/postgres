@@ -1,0 +1,42 @@
+name: Check Extension Updates
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
+
+jobs:
+  check-extension-versions:
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Install Nix
+        uses: $/.github/actions/install-nix
+
+      - name: Check for new extension versions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: nix run .#check-ext-versions
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v8.1.3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: update extension versions"
+          title: "chore: update extension versions"
+          body: |
+            DO NOT MERGE
+
+            Automated weekly check of `nix/ext/versions.json` against upstream GitHub tags.
+          draft: true
+          branch: auto-update-extension-versions
+          base: develop
+          labels: |
+            dependencies
+            automated
+            don't merge

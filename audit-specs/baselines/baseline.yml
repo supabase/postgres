@@ -145,7 +145,7 @@ file:
     owner: "1006"
     group: "0"
     filetype: file
-  /etc/adminapi/pg_upgrade_scripts/refresh_collation.sh:
+  /etc/adminapi/pg_upgrade_scripts/start_guard.sh:
     exists: true
     mode: "0755"
     owner: "1006"
@@ -4653,7 +4653,7 @@ file:
     filetype: file
   /etc/pgbouncer/pgbouncer.ini:
     exists: true
-    mode: "0700"
+    mode: "0600"
     owner: "1000"
     group: "0"
     filetype: file
@@ -4917,7 +4917,7 @@ file:
     filetype: file
   /etc/salt/gpgkeys:
     exists: true
-    mode: "0755"
+    mode: "0700"
     owner: "993"
     group: "987"
     filetype: directory
@@ -5372,6 +5372,12 @@ file:
     group: "0"
     filetype: file
   /etc/systemd/system/commence-backup.service:
+    exists: true
+    mode: "0644"
+    owner: "0"
+    group: "0"
+    filetype: file
+  /etc/systemd/system/commence-restore.service:
     exists: true
     mode: "0644"
     owner: "0"
@@ -6517,20 +6523,20 @@ file:
     owner: "0"
     group: "0"
     filetype: file
-  ? /root/.launchpadlib/api.launchpad.net/cache/api.launchpad.net,devel,-application,vnd.sun.wadl+xml,2f09acb494bdefdbf8ef0d1396a05e86
-  : exists: true
+  /root/.launchpadlib/api.launchpad.net/cache/api.launchpad.net,devel,-application,vnd.sun.wadl+xml,2f09acb494bdefdbf8ef0d1396a05e86:
+    exists: true
     mode: "0600"
     owner: "0"
     group: "0"
     filetype: file
-  ? /root/.launchpadlib/api.launchpad.net/cache/api.launchpad.net,devel,~ansible,+archive,ubuntu,ansible,ws.op=getSigningKeyData-application,json,ae98eb0a68e7ef80c2d2e3b0acf85696
-  : exists: true
+  /root/.launchpadlib/api.launchpad.net/cache/api.launchpad.net,devel,~ansible,+archive,ubuntu,ansible,ws.op=getSigningKeyData-application,json,ae98eb0a68e7ef80c2d2e3b0acf85696:
+    exists: true
     mode: "0600"
     owner: "0"
     group: "0"
     filetype: file
-  ? /root/.launchpadlib/api.launchpad.net/cache/api.launchpad.net,devel,~ansible,name=%22ansible%22&ws.op=getPPAByName-application,json,7ac403cb58cf1f9e62db6d4019d76690
-  : exists: true
+  /root/.launchpadlib/api.launchpad.net/cache/api.launchpad.net,devel,~ansible,name=%22ansible%22&ws.op=getPPAByName-application,json,7ac403cb58cf1f9e62db6d4019d76690:
+    exists: true
     mode: "0600"
     owner: "0"
     group: "0"
@@ -35803,8 +35809,8 @@ file:
     owner: "0"
     group: "0"
     filetype: file
-  ? /usr/local/aws-cli/v2/2.23.11/dist/awscli/examples/ec2/describe-local-gateway-route-table-virtual-interface-group-associations.rst
-  : exists: true
+  /usr/local/aws-cli/v2/2.23.11/dist/awscli/examples/ec2/describe-local-gateway-route-table-virtual-interface-group-associations.rst:
+    exists: true
     mode: "0644"
     owner: "0"
     group: "0"
@@ -91402,7 +91408,7 @@ kernel-param:
   kernel.usermodehelper.inheritable:
     value: 4294967295 511
   kernel.version:
-    value: '#17~24.04.1-Ubuntu SMP Wed Nov  5 10:32:15 UTC 2025'
+    value: "#17~24.04.1-Ubuntu SMP Wed Nov  5 10:32:15 UTC 2025"
   kernel.warn_limit:
     value: "0"
   kernel.watchdog:

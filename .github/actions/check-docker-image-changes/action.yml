@@ -3,22 +3,22 @@ description: Determines if Docker image inputs have changed between current and 
 
 inputs:
   base_ref:
-    description: 'Base branch ref for comparison (typically github.base_ref)'
+    description: "Base branch ref for comparison (typically github.base_ref)"
     required: false
-    default: ''
+    default: ""
   event_name:
-    description: 'GitHub event name (typically github.event_name)'
+    description: "GitHub event name (typically github.event_name)"
     required: true
 
 outputs:
   should_run:
-    description: 'Whether tests should run based on input changes'
+    description: "Whether tests should run based on input changes"
     value: ${{ steps.check.outputs.should_run }}
   input_hash:
-    description: 'Current Docker image inputs hash'
+    description: "Current Docker image inputs hash"
     value: ${{ steps.check.outputs.input_hash }}
   base_hash:
-    description: 'Base branch Docker image inputs hash (empty if not a PR)'
+    description: "Base branch Docker image inputs hash (empty if not a PR)"
     value: ${{ steps.check.outputs.base_hash }}
 
 runs:
@@ -28,7 +28,7 @@ runs:
       id: current
       shell: bash
       run: |
-        HASH=$(nix run --accept-flake-config .#docker-image-inputs -- hash)
+        HASH=$(nix run .#docker-image-inputs -- hash)
         echo "hash=$HASH" >> "$GITHUB_OUTPUT"
         echo "Current Docker image inputs hash: $HASH"
 
@@ -44,7 +44,7 @@ runs:
         git checkout FETCH_HEAD -- . 2>/dev/null || true
 
         # Get hash from base branch
-        BASE_HASH=$(nix run --accept-flake-config .#docker-image-inputs -- hash 2>/dev/null || echo "")
+        BASE_HASH=$(nix run .#docker-image-inputs -- hash 2>/dev/null || echo "")
 
         # Restore current branch
         git checkout HEAD -- .

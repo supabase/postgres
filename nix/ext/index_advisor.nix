@@ -5,6 +5,7 @@
   fetchFromGitHub,
   postgresql,
   callPackage,
+  switch-ext-version,
   latestOnly ? false,
 }:
 
@@ -31,7 +32,7 @@ let
       buildInputs = [ postgresql ];
 
       src = fetchFromGitHub {
-        owner = "olirice";
+        owner = "supabase";
         repo = pname;
         rev = "v${version}";
         inherit hash;
@@ -66,7 +67,7 @@ let
 
       meta = with lib; {
         description = "Recommend indexes to improve query performance in PostgreSQL";
-        homepage = "https://github.com/olirice/index_advisor";
+        homepage = "https://github.com/supabase/index_advisor";
         license = licenses.postgresql;
         inherit (postgresql.meta) platforms;
       };
@@ -76,13 +77,14 @@ in
 pkgs.buildEnv {
   name = pname;
   # Add dependency on hypopg for the extension to work
-  paths = packages ++ [ (callPackage ./hypopg.nix { inherit postgresql; }) ];
+  paths = packages ++ [ (callPackage ./hypopg.nix { inherit postgresql switch-ext-version; }) ];
   pathsToLink = [
     "/lib"
     "/share/postgresql/extension"
   ];
 
   passthru = {
+    perVersion = lib.mapAttrs (name: value: build name value.hash) versionsToUse;
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;
     inherit pname latestOnly;

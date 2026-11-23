@@ -67,8 +67,28 @@ class NixEvalError(TypedDict):
     error: str
 
 
+def build_select_expr(flake_outputs: List[str], system: Optional[System]) -> str:
+    """Build the --select expression that picks which flake outputs to evaluate.
+
+    With a system, only that system's part of each output is evaluated.
+    Attribute names stay the same either way, for example checks.x86_64-linux.foo.
+    """
+
+    if system is None:
+        attrs = f"inherit (outputs) {' '.join(flake_outputs)};"
+    else:
+        attrs = " ".join(
+            f"{output}.{system} = outputs.{output}.{system};"
+            for output in flake_outputs
+        )
+    return f"outputs: {{ {attrs} }}"
+
+
 def build_nix_eval_command(
-    max_workers: int, max_memory_size: int, flake_outputs: List[str]
+    max_workers: int,
+    max_memory_size: int,
+    flake_outputs: List[str],
+    system: Optional[System] = None,
 ) -> List[str]:
     """Build the nix-eval-jobs command with appropriate flags."""
     nix_eval_cmd = [
@@ -89,9 +109,38 @@ def build_nix_eval_command(
         "--workers",
         str(max_workers),
         "--select",
-        f"outputs: {{ inherit (outputs) {' '.join(flake_outputs)}; }}",
+        build_select_expr(flake_outputs, system),
     ]
     return nix_eval_cmd
+
+
+def select_system_matrices(
+    packages_output: Dict[str, Dict[str, List[GitHubActionPackage]]],
+    checks_output: Dict[str, Dict[str, List[GitHubActionPackage]]],
+    system: System,
+) -> Tuple[
+    Dict[str, List[GitHubActionPackage]],
+    Dict[str, List[GitHubActionPackage]],
+    List[str],
+]:
+    """Pick one system's packages and checks matrices from the per-system outputs.
+
+    Also returns the other systems that have real jobs.
+    Jobs are grouped by their derivation's system, so an attribute under one system can hold a derivation for another.
+    Those jobs are not in the returned matrices, and no other system's eval sees them, so the caller should fail.
+    """
+    key = system.replace("-", "_")
+    others: List[str] = sorted(
+        {
+            job["system"]
+            for output in (packages_output, checks_output)
+            for other, matrix in output.items()
+            if other != key
+            for job in matrix["include"]
+            if job["attr"] != ""
+        }
+    )
+    return packages_output[key], checks_output[key], others
 
 
 def parse_nix_eval_line(
@@ -129,10 +178,6 @@ def parse_nix_eval_line(
 
             return Err({"attr": data["attr"], "error": error_msg})
         if data["drvPath"] in drv_paths:
-            return Ok(None)
-        if "nixos-test" in data.get("requiredSystemFeatures", []) and data[
-            "system"
-        ] in ("x86_64-linux", "aarch64-darwin"):
             return Ok(None)
         drv_paths.add(data["drvPath"])
         return Ok(data)
@@ -238,10 +283,9 @@ def get_runner_for_package(pkg: NixEvalJobsOutput) -> RunsOnConfig | None:
     """Determine the appropriate GitHub Actions runner for a package.
 
     Priority order:
-    1. VM packages on Darwin → self-hosted runners
-    2. VM packages on Linux  → 16vcpu blacksmith runners
-    3. Large packages on D/L → 12/32vcpu blacksmith runners
-    5. Default Darwin/Linux  → 6/8vcpu blacksmith runners
+    1. VM packages on Linux  → 16vcpu blacksmith runners
+    2. Large packages on D/L → 12/32vcpu blacksmith runners
+    3. Default Darwin/Linux  → 6/8vcpu blacksmith runners
     """
 
     system = pkg["system"]
@@ -255,8 +299,6 @@ def get_runner_for_package(pkg: NixEvalJobsOutput) -> RunsOnConfig | None:
 
     match (is_virt_pkg(pkg), is_large_pkg(pkg), os, arch):
         # kvm
-        case (True, _, "darwin", "aarch64"):
-            return {"group": "self-hosted-runners-nix", "labels": ["aarch64-darwin"]}
         case (True, _, "linux", "aarch64"):
             return {"labels": ["arm-native-runner"]}
         case (True, _, "linux", "x86_64"):
@@ -299,14 +341,19 @@ def main() -> None:
         help="Number of parallel eval jobs. Defaults to the number of logical CPUs in the system.",
     )
     parser.add_argument(
-        "--stdin",
+        "--eval-input",
         action="store_true",
-        help="Read nix-eval-jobs output from stdin instead of executing process",
+        help="Read eval json from stdin instead of running eval process",
     )
     parser.add_argument(
-        "--stdout",
-        action="store_true",
-        help="Send matrix as json to stdout",
+        "--eval-output",
+        type=argparse.FileType("w"),
+        help="Store eval json output to file and exit",
+    )
+    parser.add_argument(
+        "--system",
+        choices=get_args(System),
+        help="Evaluate only this system, and output that system's matrices directly instead of a map of all systems",
     )
     parser.add_argument(
         "flake_outputs", nargs="+", help="Nix flake outputs to evaluate"
@@ -314,15 +361,29 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    if args.stdin:
-        nix_eval_output, warnings_list = sys.stdin.read(), []
+    if args.eval_input:
+        nix_eval_output = sys.stdin.read()
     else:
         cmd = build_nix_eval_command(
             args.nb_eval_jobs_workers,
             args.max_memory_size,
             args.flake_outputs,
+            args.system,
         )
         nix_eval_output, warnings_list = run_nix_eval_jobs(cmd)
+        if warnings_list:
+            warning_counts = Counter(warnings_list)
+            for warn_msg, count in warning_counts.items():
+                if count > 1:
+                    warning(
+                        f"{warn_msg} (occurred {count} times)",
+                        title="Nix Evaluation Warning",
+                    )
+                else:
+                    warning(warn_msg, title="Nix Evaluation Warning")
+        if args.eval_output:
+            args.eval_output.write(nix_eval_output)
+            sys.exit(0)
 
     packages, errors_list = process_nix_eval_jobs_stdout(nix_eval_output)
     gh_action_packages = sort_pkgs_by_closures(packages)
@@ -393,17 +454,6 @@ def main() -> None:
         "checks": checks_output,
     }
 
-    if warnings_list:
-        warning_counts = Counter(warnings_list)
-        for warn_msg, count in warning_counts.items():
-            if count > 1:
-                warning(
-                    f"{warn_msg} (occurred {count} times)",
-                    title="Nix Evaluation Warning",
-                )
-            else:
-                warning(warn_msg, title="Nix Evaluation Warning")
-
     if errors_list:
         # Group errors by error message
         errors_by_message: Dict[str, List[str]] = defaultdict(list)
@@ -421,15 +471,27 @@ def main() -> None:
 
     if errors_list:
         sys.exit(1)
-    elif args.stdout:
-        print(json.dumps(gh_output))
-    else:
-        formatted_msg = f"Generated GitHub Actions matrix: {json.dumps(gh_output, indent=2)}".replace(
-            "\n", "%0A"
+    elif args.system:
+        packages, checks, others = select_system_matrices(
+            packages_output,
+            checks_output,
+            args.system,
         )
-        notice(formatted_msg, title="GitHub Actions Matrix")
-        set_output("packages_matrix", json.dumps(gh_output["packages"]))
-        set_output("checks_matrix", json.dumps(gh_output["checks"]))
+        if others:
+            # These jobs would never be built: they are not in this matrix, and other systems don't evaluate them.
+            others = ", ".join(others)
+            error(
+                f"Evaluated {args.system} but found jobs whose derivations are for {others}. "
+                "No eval builds them, so move them under their own system's outputs.",
+                title="Jobs for another system",
+            )
+            sys.exit(1)
+        gh_output = {"packages": packages, "checks": checks}
+
+    set_output("packages_matrix", json.dumps(gh_output["packages"]))
+    set_output("checks_matrix", json.dumps(gh_output["checks"]))
+    print("Generated GitHub Actions matrix:")
+    json.dumps(gh_output, indent=2)
 
 
 if __name__ == "__main__":

@@ -50,6 +50,10 @@ let
         inherit hash;
       };
 
+      patches = lib.optionals (version == latestVersion) [
+        ./patches/pgsodium-create-mask-view-quoting.patch
+      ];
+
       installPhase = ''
         runHook preInstall
 
@@ -112,6 +116,7 @@ pkgs.buildEnv {
   '';
 
   passthru = {
+    perVersion = lib.mapAttrs (name: value: build name value.hash) versionsToUse;
     versions = versionsBuilt;
     numberOfVersions = numberOfVersionsBuilt;
     inherit pname latestOnly;

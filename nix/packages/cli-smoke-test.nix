@@ -131,9 +131,9 @@ writeShellApplication {
 
         # Get component versions from ansible/vars.yml
         log_info "Reading component versions from ansible/vars.yml..."
-        REST_VERSION=$(yq -r '.postgrest_release' "$REPO_ROOT/ansible/vars.yml")
-        AUTH_VERSION=$(yq -r '.gotrue_release' "$REPO_ROOT/ansible/vars.yml")
-        PG_RELEASE=$(yq -r ".postgres_release[\"postgres$PG_VERSION\"]" "$REPO_ROOT/ansible/vars.yml")
+        REST_VERSION=$(yq -er '.postgrest_release' "$REPO_ROOT/ansible/vars.yml")
+        AUTH_VERSION=$(yq -er '.gotrue_release' "$REPO_ROOT/ansible/vars.yml")
+        PG_RELEASE=$(yq -er ".postgres_release.postgres$PG_VERSION" "$REPO_ROOT/ansible/postgres_release.yml")
 
         log_info "  PostgREST: $REST_VERSION"
         log_info "  GoTrue: $AUTH_VERSION"
@@ -148,7 +148,8 @@ writeShellApplication {
         mkdir -p supabase/.temp
 
         # Set component versions - CLI reads these to determine which images to use
-        echo "v$REST_VERSION" > supabase/.temp/rest-version
+        # PostgREST is mirrored to ECR with a -middleware suffix (see mirror-postgrest.yml)
+        echo "v$REST_VERSION-middleware" > supabase/.temp/rest-version
         echo "v$AUTH_VERSION" > supabase/.temp/gotrue-version
         # Use major version so CLI constructs supabase/postgres:$PG_VERSION (our local build)
         echo "$PG_VERSION" > supabase/.temp/postgres-version
