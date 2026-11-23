@@ -9,7 +9,7 @@
     name: supabase-admin-agent
     uid: 990
     group: supabase-admin-agent
-    groups: admin,salt
+    groups: admin,salt,wal-g
     append: yes
     system: yes
     shell: /bin/sh
