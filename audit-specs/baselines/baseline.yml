@@ -4923,7 +4923,7 @@ file:
     filetype: directory
   /etc/salt/minion:
     exists: true
-    mode: "0644"
+    mode: "0600"
     owner: "0"
     group: "0"
     filetype: file

@@ -38,6 +38,13 @@
     group: root
     mode: "0700"
 
+- name: Restrict salt minion config
+  ansible.builtin.file:
+    path: /etc/salt/minion
+    owner: root
+    group: root
+    mode: "0600"
+
 - name: Pin salt packages at major version
   ansible.builtin.copy:
     content: |
