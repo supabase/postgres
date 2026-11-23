@@ -1,3 +1,8 @@
+# Sorts a fixed corpus under en_US.UTF-8.
+# Fails if the output hash differs from glibc 2.40-66 in a pinned nixpkgs.
+# Checks the flake's glibc and Ubuntu's locale data.
+# A different sort order needs a reindex of glibc indexes in postgres.
+# Also pins the ICU version.
 { pkgs }:
 let
   inherit (pkgs) lib;
