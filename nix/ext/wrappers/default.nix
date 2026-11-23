@@ -260,7 +260,7 @@ let
   }) versionsToUse;
   packages = builtins.attrValues packagesAttrSet;
 in
-(buildEnv {
+buildEnv {
   name = pname;
   paths = packages;
   nativeBuildInputs = [ makeWrapper ];
@@ -386,7 +386,4 @@ in
       recurseForDerivations = true;
     };
   };
-}).overrideAttrs
-  (_: {
-    requiredSystemFeatures = [ "big-parallel" ];
-  })
+}
