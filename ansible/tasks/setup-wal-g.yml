@@ -60,7 +60,7 @@
       ansible.builtin.file:
         group: "wal-g"
         mode: "0664"
-        owner: "wal-g"
+        owner: "adminapi"
         path: "/etc/wal-g/config.json"
         state: "touch"
 
