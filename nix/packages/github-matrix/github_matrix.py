@@ -269,6 +269,17 @@ def sort_pkgs_by_closures(jobs: List[NixEvalJobsOutput]) -> List[NixEvalJobsOutp
     return sorted_jobs
 
 
+def waits_for_other_jobs(pkg: NixEvalJobsOutput, job_drvs: Set[str]) -> bool:
+    """Check if building this package needs the output of another job in the same matrix.
+
+    Matrix jobs all start together, so such a package would rebuild its dependencies itself.
+    It is better to run it in a later stage, after those dependencies are built and cached.
+    Dependencies that are already cached are not in neededBuilds, so they don't count.
+    """
+    needed = set(pkg.get("neededBuilds", []))
+    return bool(needed & job_drvs - {pkg["drvPath"]})
+
+
 def is_large_pkg(pkg: NixEvalJobsOutput) -> bool:
     """Determine if a package is considered large based on its attribute path."""
     return "big-parallel" in pkg.get("requiredSystemFeatures", [])
@@ -406,19 +417,34 @@ def main() -> None:
         return returned_pkg
 
     # Group packages by system and type (checks vs packages)
+    leaf_packages_by_system: Dict[System, List[GitHubActionPackage]] = defaultdict(list)
     packages_by_system: Dict[System, List[GitHubActionPackage]] = defaultdict(list)
     checks_by_system: Dict[System, List[GitHubActionPackage]] = defaultdict(list)
+    package_drvs = {
+        pkg["drvPath"]
+        for pkg in gh_action_packages
+        if pkg.get("cacheStatus") == "notBuilt"
+        and pkg["attr"].startswith("legacyPackages.")
+    }
     for pkg in gh_action_packages:
         if pkg.get("cacheStatus") == "notBuilt":
             cleaned_pkg = clean_package_for_output(pkg)
             if pkg["attr"].startswith("checks."):
                 checks_by_system[pkg["system"]].append(cleaned_pkg)
             elif pkg["attr"].startswith("legacyPackages."):
-                packages_by_system[pkg["system"]].append(cleaned_pkg)
+                # Leaf packages build first. The rest wait for them, so they can reuse their output.
+                if waits_for_other_jobs(pkg, package_drvs):
+                    packages_by_system[pkg["system"]].append(cleaned_pkg)
+                else:
+                    leaf_packages_by_system[pkg["system"]].append(cleaned_pkg)
 
     packages_output: Dict[str, Dict[str, List[GitHubActionPackage]]] = {}
     for pkg_system, pkg_list in packages_by_system.items():
         packages_output[pkg_system.replace("-", "_")] = {"include": pkg_list}
+
+    leaf_packages_output: Dict[str, Dict[str, List[GitHubActionPackage]]] = {}
+    for pkg_system, pkg_list in leaf_packages_by_system.items():
+        leaf_packages_output[pkg_system.replace("-", "_")] = {"include": pkg_list}
 
     checks_output: Dict[str, Dict[str, List[GitHubActionPackage]]] = {}
     for check_system, check_list in checks_by_system.items():
@@ -437,6 +463,17 @@ def main() -> None:
                     }
                 ]
             }
+        if s not in leaf_packages_output:
+            leaf_packages_output[s] = {
+                "include": [
+                    {
+                        "attr": "",
+                        "name": "no leaf packages to build",
+                        "system": system,
+                        "runs_on": {"labels": ["ubuntu-slim"]},
+                    }
+                ]
+            }
         if s not in packages_output:
             packages_output[s] = {
                 "include": [
@@ -450,6 +487,7 @@ def main() -> None:
             }
 
     gh_output = {
+        "leaf_packages": leaf_packages_output,
         "packages": packages_output,
         "checks": checks_output,
     }
@@ -486,8 +524,13 @@ def main() -> None:
                 title="Jobs for another system",
             )
             sys.exit(1)
-        gh_output = {"packages": packages, "checks": checks}
+        gh_output = {
+            "leaf_packages": leaf_packages_output[args.system.replace("-", "_")],
+            "packages": packages,
+            "checks": checks,
+        }
 
+    set_output("leaf_packages_matrix", json.dumps(gh_output["leaf_packages"]))
     set_output("packages_matrix", json.dumps(gh_output["packages"]))
     set_output("checks_matrix", json.dumps(gh_output["checks"]))
     print("Generated GitHub Actions matrix:")
