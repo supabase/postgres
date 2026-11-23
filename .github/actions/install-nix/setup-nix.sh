@@ -3,7 +3,7 @@
 readonly version=2.35.3
 set -euo pipefail
 
-if systemctl whoami &>/dev/null || [[ $(uname) == Darwin ]]; then
+if [[ ${SINGLE_USER:-false} != true ]] && { systemctl whoami &>/dev/null || [[ $(uname) == Darwin ]]; }; then
 	# systemd is running so we can install in multi-user mode
 	# or running on macos
 	daemon=--daemon
@@ -15,7 +15,8 @@ if systemctl whoami &>/dev/null || [[ $(uname) == Darwin ]]; then
 
 	function maybesudo { sudo -H --preserve-env=GITHUB_TOKEN,AWS_REGION,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_SESSION_TOKEN,NIX_SIGN_SECRET_KEY env "$@"; }
 else
-	# systemd is *not* running so we must install in single-user mode
+	# Install in single-user mode: either systemd is *not* running, or the caller asked for it.
+	# Useful for eval-heavy jobs which run faster without the daemon.
 	daemon=--no-daemon
 	nixconfdir=$HOME/.config/nix
 	path=$HOME/.nix-profile/bin

@@ -41,6 +41,7 @@ permissions:
 
 jobs:
   build:
+    name: 🦤17 ${{ inputs.arch == 'amd64' && '🐧x86' || '🐧arm' }}
     runs-on: ${{ inputs.arch == 'amd64' && 'blacksmith-16vcpu-ubuntu-2404' || 'arm-native-runner' }}
     env:
       # only builds pg17 atm
