@@ -14,7 +14,7 @@ SCRIPT_DIR=$(dirname -- "$0")
 # Each attempt overwrites the log. Failed attempts are shipped before the retry.
 LOG_FILE="/var/log/pg-upgrade-prepare.log"
 touch "$LOG_FILE"
-chmod 640 "$LOG_FILE"
+chmod 644 "$LOG_FILE"
 
 # From here on, everything written to stdout/stderr (log messages, but also
 # errors from systemctl, install, sync, etc.) is written to the log file.
@@ -39,7 +39,7 @@ on_exit() {
 	local rc=$?
 	trap - EXIT ERR
 
-	[ "$rc" -eq 0 ] && log "prepare.sh ended with no errors."
+	[ "$rc" -eq 0 ] && log "prepare.sh ended with no errors"
 	ship_logs "$LOG_FILE" || log "Log upload failed (non-blocking)."
 	exit "$rc"
 }
@@ -72,6 +72,10 @@ fi
 # copy the pgsodium root key with proper owner and permissions
 install -m 600 -o postgres -g postgres \
 	/etc/postgresql-custom/pgsodium_root.key /data/pgsodium_root.key
+
+# copy the anon key used to ship logs to the error_logs project
+install -m 600 -o root -g root \
+	/root/upgrade-reporting-credentials /data/upgrade-reporting-credentials.target
 
 # flush cached writes to persistent storage
 sync

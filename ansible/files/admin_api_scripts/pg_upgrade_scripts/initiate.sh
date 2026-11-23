@@ -29,8 +29,30 @@ PG13_EXTENSIONS_TO_DISABLE=(
 set -eEuo pipefail
 
 SCRIPT_DIR=$(dirname -- "$0")
+
+# Each attempt overwrites the log. Failed attempts are shipped before the retry.
+LOG_FILE="/var/log/pg-upgrade-initiate.log"
+touch "$LOG_FILE"
+chmod 644 "$LOG_FILE"
+
+# From here on, everything written to stdout/stderr (log messages, but also
+# errors from systemctl, install, sync, etc.) is written to the log file.
+exec >"$LOG_FILE" 2>&1
+
+# Minimal fallback so that "log" exists even if common.sh cannot be sourced.
+# common.sh redefines it with the real implementation.
+log() { echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') $*"; }
+
+# Log any unexpected failure (set -e) with the line number and failing command,
+# so that no error can end the script silently.
+trap 'log "initiate.sh FAILED at line $LINENO: \"$BASH_COMMAND\" (exit code $?)"' ERR
+
+# Source the shared helpers (log and ship_logs functions)
 # shellcheck disable=SC1091
-source "$SCRIPT_DIR/common.sh"
+source "$SCRIPT_DIR/common.sh" || {
+	log "cannot source $SCRIPT_DIR/common.sh"
+	exit 1
+}
 
 IS_CI=${IS_CI:-}
 IS_LOCAL_UPGRADE=${IS_LOCAL_UPGRADE:-}
@@ -40,7 +62,6 @@ IS_NIX_BASED_SYSTEM="false"
 PGVERSION=$1
 POSTGRES_SHARE_DIR="/usr/share/postgresql/${PGVERSION}"
 MOUNT_POINT="/data_migration"
-LOG_FILE="/var/log/pg-upgrade-initiate.log"
 
 POST_UPGRADE_EXTENSION_SCRIPT="/tmp/pg_upgrade/pg_upgrade_extensions.sql"
 POST_UPGRADE_POSTGRES_PERMS_SCRIPT="/tmp/pg_upgrade/pg_upgrade_postgres_perms.sql"
@@ -219,6 +240,8 @@ on_exit() {
 		fi
 	fi
 	unblock_postgres_start || log "WARNING: failed to lift the postgres start block; check /run/systemd/system/postgresql.service.d"
+
+	log "initiate.sh ended"
 
 	exit "$exit_code"
 }
@@ -560,10 +583,37 @@ EXTRA_NIX_CONF
 		mkdir -p "$MOUNT_POINT"
 	fi
 
+	# in prepare.sh script we copy 2 files in the /data of the TARGET
+	# to somehow 'ship them' here on the SOURCE
+	# pgsodium_root.key to be used with the pgsodium extension
+	# upgrade-reporting-credentials is the ANON jwt key used to ship_logs
+
+	# get the pgsodium_root.key from the TARGET
+	# and copy it on the SOURCE (local)
+
 	if [ -f "$MOUNT_POINT/pgsodium_root.key" ]; then
 		cp "$MOUNT_POINT/pgsodium_root.key" /etc/postgresql-custom/pgsodium_root.key
 		chown postgres:postgres /etc/postgresql-custom/pgsodium_root.key
 		chmod 640 /etc/postgresql-custom/pgsodium_root.key
+	fi
+
+	# get the upgrade-reporting-credentials.target from the TARGET
+	# and move it on the SOURCE (local) only if one is existing prior
+	# if not, delete it from the MOUNT_POINT
+
+	if [ -f "$MOUNT_POINT/upgrade-reporting-credentials.target" ]; then
+		if [ -f /root/upgrade-reporting-credentials ]; then
+
+			# the fresh ANON key will replace a potentially old and unvalid one
+			# preventing the logs to be shipped (curl post would then fail)
+
+			mv /root/upgrade-reporting-credentials /root/upgrade-reporting-credentials.bkp
+			mv "$MOUNT_POINT/upgrade-reporting-credentials.target" /root/upgrade-reporting-credentials
+			chown root:root /root/upgrade-reporting-credentials
+			chmod 600 /root/upgrade-reporting-credentials
+		else
+			rm $MOUNT_POINT/upgrade-reporting-credentials.target
+		fi
 	fi
 
 	log "7. Disabling extensions and generating post-upgrade script"
@@ -698,7 +748,7 @@ EOF
 
 		else
 
-			log "9.1. did *not* add checksum to SOURCE PG: size $PGDATAOLD_SIZE > 20 Gb!"
+			log "9.1. did *not* add checksums to SOURCE PG: size $PGDATAOLD_SIZE > 20 Gb!"
 
 		fi
 
@@ -768,6 +818,7 @@ trap cleanup ERR
 
 echo "running" >/tmp/pg-upgrade-status
 if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
+	log "initiate.sh started"
 	initiate_upgrade >>"$LOG_FILE" 2>&1 &
 	log "Upgrade initiate job completed"
 else
