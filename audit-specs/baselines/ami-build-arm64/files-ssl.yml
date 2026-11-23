@@ -8,25 +8,25 @@ file:
     filetype: directory
     owner: root
     group: root
-    mode: '0755'
+    mode: "0755"
   /etc/ssl/certs:
     exists: true
     filetype: directory
     owner: root
     group: root
-    mode: '0755'
+    mode: "0755"
   /etc/ssl/private:
     exists: true
     filetype: directory
     owner: root
     group: postgres
-    mode: '0750'
+    mode: "0750"
   /etc/ssl/openssl.cnf:
     exists: true
     filetype: file
     owner: root
     group: root
-    mode: '0644'
+    mode: "0644"
   # eMudhra's emSign ECC Root CA - G3 is distrusted after intermediate CA key
   # compromise (https://emudhra.we-have-a-problem.com/). Removed in Ubuntu
   # ca-certificates 20260816ubuntu0.24.04.1.

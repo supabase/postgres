@@ -41,6 +41,10 @@ function execute_stage2_playbook {
 	run_playbook ./ansible/playbook.yml /tmp true true localhost local --extra-vars "$NIX_STORE_PATHS"
 }
 
+function check_supa_tripwire {
+	[[ -z ${SUPA_TRIPWIRE_URL:-} ]] || test -x /usr/local/bin/supa-tripwire
+}
+
 function clean_legacy_things {
 	# removes things that are bundled for legacy reasons, but we can start without for our newer artifacts
 	apt-mark auto zlib1g zlib1g-dev
@@ -61,7 +65,7 @@ function clean_system {
 
 	remove_unwanted_files
 
-	# remove passwords in user-data-cloudimg.img (required for Packer login)
+	# remove passwords in user-data-cloudimg (required for Packer login)
 	usermod -p '*' ubuntu
 	usermod -p '*' root
 
@@ -100,6 +104,7 @@ execute_playbook
 
 install_nix
 execute_stage2_playbook
+check_supa_tripwire
 clean_legacy_things
 clean_system
 clean_nix

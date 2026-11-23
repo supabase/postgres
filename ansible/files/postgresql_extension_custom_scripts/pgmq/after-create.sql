@@ -1,13 +1,12 @@
 do $$
 declare
-  extoid oid;
-  extversion text;
-  search_path text;
-  r record;
-  cls pg_class%rowtype;
+  saved_search_path pg_catalog.text := (select pg_catalog.current_setting('search_path'));
+  extoid pg_catalog.oid;
+  extversion pg_catalog.text;
+  r pg_catalog.record;
+  cls pg_catalog.pg_class%rowtype;
 begin
-  search_path := current_setting('search_path');
-  perform set_config('search_path', 'pg_catalog, pg_temp', true);
+  perform pg_catalog.set_config('search_path', 'pg_catalog, pg_temp', true);
 
   select e.oid, e.extversion into extoid, extversion from pg_extension e where extname = 'pgmq';
 
@@ -143,7 +142,7 @@ BEGIN
 
     RETURN TRUE;
 END;
-$func$ LANGUAGE plpgsql;
+$func$ LANGUAGE plpgsql SET search_path = pg_catalog, pg_temp;
 
   alter extension pgmq add function pgmq.drop_queue(text);
 
@@ -153,7 +152,7 @@ RETURNS BOOLEAN AS $shim$
 BEGIN
     RETURN pgmq.drop_queue(queue_name);
 END;
-$shim$ LANGUAGE plpgsql;
+$shim$ LANGUAGE plpgsql SET search_path = pg_catalog, pg_temp;
 
   alter extension pgmq add function pgmq.drop_queue(text, boolean);
 
@@ -192,5 +191,5 @@ $shim$ LANGUAGE plpgsql;
     end if;
   end loop;
 
-  perform set_config('search_path', search_path, true);
+  perform pg_catalog.set_config('search_path', saved_search_path, true);
 end $$;

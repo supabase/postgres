@@ -106,6 +106,19 @@ writeShellApplication {
     # Tests to skip for OrioleDB
     ORIOLEDB_SKIP_TESTS=(
         "index_advisor"
+
+        # OrioleDB still uses PostgreSQL 17.11.
+        # drop these skips when it includes the 17.12 fixes.
+        "alter_column_type_rowtype_deps"
+        "bpchar_btree_dedup"
+        "cast_function_execute_privilege"
+        "drop_owned_rls_policy"
+        "function_def_target_alias"
+        "jsonpath_gin_lookup"
+        "partition_prune_range"
+        "to_char_v_overflow"
+        "upsert_rls_conflict_where"
+        "upsert_view_visibility"
     )
 
     # Tests to skip for multigres images (pgsodium not installed; vault has z_multigres-17_ variant)
@@ -114,12 +127,7 @@ writeShellApplication {
         "vault"
     )
 
-    # Tests to skip for multigres-orioledb-17 (superset of multigres skips)
-    MULTIGRES_ORIOLEDB_SKIP_TESTS=(
-        "pgsodium"
-        "vault"
-        "index_advisor"
-    )
+    MULTIGRES_ORIOLEDB_SKIP_TESTS=("''${ORIOLEDB_SKIP_TESTS[@]}" "''${MULTIGRES_SKIP_TESTS[@]}")
 
     get_test_list() {
         local version="$1"

@@ -6,7 +6,6 @@
       _module.args.pkgs = import inputs.nixpkgs {
         inherit system;
         config.allowUnfree = true;
-        permittedInsecurePackages = [ "v8-9.7.106.18" ];
         overlays = [
           # Patch tzdata to 2026f until nixpkgs catches up.
           # Drop once the pinned nixpkgs ships >= 2026f (the assertion below trips):
@@ -18,6 +17,7 @@
           (
             final: prev:
             let
+              # renovate: datasource=github-tags packageName=eggert/tz
               version = "2026f";
             in
             {
@@ -42,6 +42,14 @@
                         ""
                       ]
                       old.postInstall;
+                  # now.ck fails for builds after 2026-11-01 because zonenow.tab lists zones that became identical.
+                  # Run it at the release time, same as https://github.com/NixOS/nixpkgs/pull/582577.
+                  # Remove this preCheck, and the whole tzdata override, once the pinned nixpkgs includes that PR.
+                  # https://lists.iana.org/hyperkitty/list/tz@iana.org/message/WCIAEEDCPA5HT3LLJK6YQ6FH7ND5ORIK/
+                  preCheck = ''
+                    release_time_t=$(date -d "$(awk '/^Release /{print $4, $5, $6; exit}' NEWS)" +%s)
+                    checkFlagsArray+=("CHECK_NOW_TIMESTAMP=$release_time_t")
+                  '';
                   srcs = [
                     (final.fetchurl {
                       url = "https://data.iana.org/time-zones/releases/tzdata${version}.tar.gz";
@@ -97,13 +105,12 @@
           (
             let
               # Provide older versions of packages required by some extensions
-              oldstable = import inputs.nixpkgs-oldstable {
-                inherit system;
-                config.allowUnfree = true;
-              };
+              oldstable = import inputs.nixpkgs-oldstable { inherit system; };
+              nixos2211 = import inputs.nixpkgs-2211 { inherit system; };
             in
             _final: _prev: {
               v8_oldstable = oldstable.v8;
+              clang11 = nixos2211.clang;
             }
           )
         ];

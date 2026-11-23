@@ -35,15 +35,15 @@ else
 				echo
 				continue
 			fi
-			if grep -q '^No `legacyPackages' "$file"; then
-				# short, no-op case: summary alone, nothing to expand
+			if grep -q -e '^No `legacyPackages' -e '^Baseline unavailable' "$file"; then
+				# short, no-op or no-baseline case: summary alone, nothing to expand
 				echo "<details>"
 				echo "<summary>${system}: $(cat "$file")</summary>"
 				echo "</details>"
 				echo
 				continue
 			fi
-			summary=$(grep '^Closure size:' "$file" | tail -1)
+			summary=$(grep '^Closure size:' "$file" | tail -1 || true)
 			echo "<details>"
 			echo "<summary>${system}: ${summary:-changed}</summary>"
 			echo

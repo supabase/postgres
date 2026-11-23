@@ -3,13 +3,13 @@ description: Assembles per-leg manifest diffs into one collapsed comment and pos
 
 inputs:
   marker:
-    description: 'Unique HTML comment marker identifying this comment (e.g. ami-manifest-diff)'
+    description: "Unique HTML comment marker identifying this comment (e.g. ami-manifest-diff)"
     required: true
   title:
-    description: 'Comment heading (e.g. AMI manifest diff)'
+    description: "Comment heading (e.g. AMI manifest diff)"
     required: true
   artifact_pattern:
-    description: 'Glob matching the uploaded per-leg diff artifacts (e.g. ami-manifest-diff-*)'
+    description: "Glob matching the uploaded per-leg diff artifacts (e.g. ami-manifest-diff-*)"
     required: true
 
 runs:

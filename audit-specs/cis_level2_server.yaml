@@ -63,7 +63,7 @@ kernel-param:
 
 command:
   check-password-fields:
-    exec: "awk -F: '($2 == \"\") {print}' /etc/shadow | wc -l"
+    exec: 'awk -F: ''($2 == "") {print}'' /etc/shadow | wc -l'
     exit-status: 0
     stdout:
       - "0"

@@ -10,9 +10,9 @@ on:
   workflow_dispatch:
     inputs:
       dockerfile:
-        description: 'Specific Dockerfile to test (leave empty for all)'
+        description: "Specific Dockerfile to test (leave empty for all)"
         required: false
-        default: ''
+        default: ""
         type: string
 
 permissions:
@@ -50,11 +50,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { dockerfile: Dockerfile-15,          target: "",                  name: 15                      }
-          - { dockerfile: Dockerfile-17,          target: "",                  name: 17                      }
-          - { dockerfile: Dockerfile-orioledb-17, target: "",                  name: orioledb-17             }
-          - { dockerfile: Dockerfile-multigres,   target: variant-17,          name: multigres-17            }
-          - { dockerfile: Dockerfile-multigres,   target: variant-orioledb-17, name: multigres-orioledb-17   }
+          - { dockerfile: Dockerfile-15, target: "", name: 15 }
+          - { dockerfile: Dockerfile-17, target: "", name: 17 }
+          - { dockerfile: Dockerfile-orioledb-17, target: "", name: orioledb-17 }
+          - { dockerfile: Dockerfile-multigres, target: variant-17, name: multigres-17 }
+          - {
+              dockerfile: Dockerfile-multigres,
+              target: variant-orioledb-17,
+              name: multigres-orioledb-17,
+            }
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v7.0.1

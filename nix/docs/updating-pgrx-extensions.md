@@ -12,30 +12,29 @@ Updating a pgrx extension can involve one or more of these changes:
 
 Each scenario requires different file changes. This guide covers all three.
 
-
 ## Quick Reference: File Locations
 
-| Purpose | File |
-|---------|------|
-| Extension versions | `nix/ext/versions.json` |
-| Extension-specific config | `nix/ext/<name>/default.nix` |
-| pgrx versions + Rust mappings | `nix/cargo-pgrx/versions.json` |
-| cargo-pgrx package definitions | `nix/cargo-pgrx/default.nix` |
-| pgrx extension builder | `nix/cargo-pgrx/mkPgrxExtension.nix` |
-| Overlays (buildPgrxExtension_*) | `nix/overlays/default.nix` |
-| Rust toolchain source | `flake.nix` (rust-overlay input) |
-| Pinned rust-overlay version | `flake.lock` |
+| Purpose                           | File                                 |
+| --------------------------------- | ------------------------------------ |
+| Extension versions                | `nix/ext/versions.json`              |
+| Extension-specific config         | `nix/ext/<name>/default.nix`         |
+| pgrx versions + Rust mappings     | `nix/cargo-pgrx/versions.json`       |
+| cargo-pgrx package definitions    | `nix/cargo-pgrx/default.nix`         |
+| pgrx extension builder            | `nix/cargo-pgrx/mkPgrxExtension.nix` |
+| Overlays (buildPgrxExtension\_\*) | `nix/overlays/default.nix`           |
+| Rust toolchain source             | `flake.nix` (rust-overlay input)     |
+| Pinned rust-overlay version       | `flake.lock`                         |
 
 ---
 
 ## Summary: Which Scenario Am I In?
 
-| Situation | Scenario |
-|-----------|----------|
-| Same pgrx and Rust as previous version | 1 - Extension only |
-| Extension's Cargo.toml has newer pgrx | 2 - Extension + pgrx |
-| Extension requires Rust version not in rust-overlay | 3 - Full stack update |
-| "attribute missing" error for Rust version | 3 - Need `nix flake update rust-overlay` |
+| Situation                                           | Scenario                                 |
+| --------------------------------------------------- | ---------------------------------------- |
+| Same pgrx and Rust as previous version              | 1 - Extension only                       |
+| Extension's Cargo.toml has newer pgrx               | 2 - Extension + pgrx                     |
+| Extension requires Rust version not in rust-overlay | 3 - Full stack update                    |
+| "attribute missing" error for Rust version          | 3 - Need `nix flake update rust-overlay` |
 
 ---
 
@@ -45,9 +44,9 @@ Use this when the extension has a new release but uses the same pgrx and Rust ve
 
 ### Files to Change
 
-| File | Change |
-|------|--------|
-| `nix/ext/versions.json` | Add new version entry |
+| File                              | Change                                             |
+| --------------------------------- | -------------------------------------------------- |
+| `nix/ext/versions.json`           | Add new version entry                              |
 | `nix/ext/<extension>/default.nix` | Add old version to `allPreviouslyPackagedVersions` |
 
 ### Steps
@@ -114,11 +113,11 @@ Use this when the extension requires a newer pgrx version.
 
 ### Files to Change
 
-| File | Change |
-|------|--------|
-| `nix/ext/versions.json` | Add new version with new pgrx version |
+| File                              | Change                                             |
+| --------------------------------- | -------------------------------------------------- |
+| `nix/ext/versions.json`           | Add new version with new pgrx version              |
 | `nix/ext/<extension>/default.nix` | Add old version to `allPreviouslyPackagedVersions` |
-| `nix/cargo-pgrx/versions.json` | Add new pgrx version (if not already present) |
+| `nix/cargo-pgrx/versions.json`    | Add new pgrx version (if not already present)      |
 
 ### Steps
 
@@ -177,8 +176,8 @@ Use this when you need a newer Rust toolchain version.
 
 All files from scenario 2, plus:
 
-| File | Change |
-|------|--------|
+| File         | Change                    |
+| ------------ | ------------------------- |
 | `flake.lock` | Update rust-overlay input |
 
 ### Understanding rust-overlay
@@ -286,6 +285,7 @@ nix build .#psql_17.exts.wrappers -L
 ### Error: `attribute '"X.Y.Z"' missing`
 
 **Example:**
+
 ```
 error: attribute '"1.88.0"' missing
 at /nix/store/.../nix/ext/wrappers/default.nix:19:15:
@@ -296,6 +296,7 @@ Did you mean one of 1.38.0, 1.48.0, 1.58.0, 1.68.0 or 1.78.0?
 **Cause:** The Rust version specified in `versions.json` isn't available in your pinned `rust-overlay`.
 
 **Solution:**
+
 ```bash
 nix flake update rust-overlay
 ```

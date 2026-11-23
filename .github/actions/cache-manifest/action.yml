@@ -3,10 +3,10 @@ description: Annotates a rootfs manifest with a version label and caches it as t
 
 inputs:
   key_prefix:
-    description: 'Cache key prefix (e.g. ami-manifest-15-amd64, docker-manifest-17-production)'
+    description: "Cache key prefix (e.g. ami-manifest-15-amd64, docker-manifest-17-production)"
     required: true
   version_label:
-    description: 'Version string to stamp into the manifest'
+    description: "Version string to stamp into the manifest"
     required: true
 
 runs:

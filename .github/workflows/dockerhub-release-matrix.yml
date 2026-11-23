@@ -25,7 +25,7 @@ jobs:
       - name: Generate build matrix
         id: set-matrix
         run: |
-          nix run nixpkgs#nushell -- -c 'let versions = (open ansible/vars.yml | get postgres_major)
+          nix run --inputs-from . nixpkgs#nushell -- -c 'let versions = (open ansible/vars.yml | get postgres_major)
           let base_matrix = ($versions | each { |ver|
             let version = ($ver | str trim)
             let dockerfile = $"Dockerfile-($version)"
@@ -77,17 +77,17 @@ jobs:
       - uses: $/.github/actions/install-nix
       - name: Set PostgreSQL version environment variable
         run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.version }}" >> $GITHUB_ENV
-      
+
       - id: args
         run: |
-          nix run nixpkgs#nushell -- -c '
+          nix run --inputs-from . nixpkgs#nushell -- -c '
             open ansible/vars.yml 
             | items { |key value| {name: $key, item: $value} } 
             | where { |it| ($it.item | describe) == "string" } 
             | each { |it| $"($it.name)=($it.item)" } 
             | str join "\n" 
             | save --append $env.GITHUB_OUTPUT
-          '    
+          '
   build_release_image:
     needs: [prepare, build]
     strategy:
@@ -104,7 +104,7 @@ jobs:
       - uses: docker/setup-buildx-action@v4.4.1
         with:
           endpoint: builders
-      - uses: docker/login-action@v4.6.0
+      - uses: docker/login-action@v4.8.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
@@ -112,7 +112,7 @@ jobs:
         id: image
         run: |
           if [[ "${{ matrix.arch }}" == "arm64" ]]; then
-            pg_version=$(nix run nixpkgs#nushell -- -c '
+            pg_version=$(nix run --inputs-from . nixpkgs#nushell -- -c '
               let version = "${{ matrix.postgres.version }}"
               let is_multigres = ($version | str starts-with "multigres-")
               let base_version = if $is_multigres { $version | str replace "multigres-" "" } else { $version }
@@ -126,7 +126,7 @@ jobs:
             ')
             echo "pg_version=supabase/postgres:$pg_version" >> $GITHUB_OUTPUT
           else
-            pg_version=$(nix run nixpkgs#nushell -- -c '
+            pg_version=$(nix run --inputs-from . nixpkgs#nushell -- -c '
               let version = "${{ matrix.postgres.version }}"
               let is_multigres = ($version | str starts-with "multigres-")
               let base_version = if $is_multigres { $version | str replace "multigres-" "" } else { $version }
@@ -177,14 +177,14 @@ jobs:
         uses: actions/checkout@v7.0.1
       - uses: $/.github/actions/install-nix
       - uses: docker/setup-buildx-action@v4.4.1
-      - uses: docker/login-action@v4.6.0
+      - uses: docker/login-action@v4.8.0
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: Get image tag
         id: get_version
         run: |
-          nix run nixpkgs#nushell -- -c '
+          nix run --inputs-from . nixpkgs#nushell -- -c '
             let version = "${{ matrix.version }}"
             let is_multigres = ($version | str starts-with "multigres-")
             let base_version = if $is_multigres { $version | str replace "multigres-" "" } else { $version }
@@ -231,15 +231,15 @@ jobs:
       - name: Get Versions from Matrix Config
         id: get_versions
         run: |
-          nix run nixpkgs#nushell -- -c '
+          nix run --inputs-from . nixpkgs#nushell -- -c '
             # Parse the matrix configuration directly
             let matrix_config = (${{ toJson(needs.prepare.outputs.matrix_config) }} | from json)
-      
+
             # Get versions directly from include array
             let versions = ($matrix_config.include | get version)
-      
+
             echo "Versions: $versions"
-      
+
             # Convert the versions to a comma-separated string
             let versions_str = ($versions | str join ",")
             $"versions=$versions_str" | save --append $env.GITHUB_ENV
@@ -251,7 +251,7 @@ jobs:
       - name: Combine Results
         id: combine
         run: |
-          nix run nixpkgs#nushell -- -c '
+          nix run --inputs-from . nixpkgs#nushell -- -c '
             # Get all results files and process them in one go
             let files = (ls **/results.txt | get name)
             echo $"Found files: ($files)"
@@ -282,14 +282,14 @@ jobs:
     outputs:
       matrix: ${{ steps.combine.outputs.matrix }}
   publish:
-      needs: combine_results
-      permissions:
-        contents: read
-        packages: write
-        id-token: write
-      strategy:
-        matrix: ${{ fromJson(needs.combine_results.outputs.matrix) }}
-      uses: $/.github/workflows/mirror.yml
-      with:
-        version: ${{ matrix.version }}
-      secrets: inherit
+    needs: combine_results
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    strategy:
+      matrix: ${{ fromJson(needs.combine_results.outputs.matrix) }}
+    uses: $/.github/workflows/mirror.yml
+    with:
+      version: ${{ matrix.version }}
+    secrets: inherit

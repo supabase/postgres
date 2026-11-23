@@ -92,7 +92,7 @@ informative or not applicable.
   project's data, reading credentials stored in the database, or making
   outbound network requests through an extension.
 - The attacker needs `anon` or `authenticated` to run DDL, such as `CREATE
-  TRIGGER`, or to open a direct database session. The Data API does not
+TRIGGER`, or to open a direct database session. The Data API does not
   provide a way to run DDL, and those roles cannot log in. Such a chain needs
   a separate flaw. Show that flaw.
 - The attacker needs root or `sudo` on the host, needs to modify the image, or
@@ -186,7 +186,7 @@ tested a standalone install, because that decides who else is affected.
   above.
 - **Give a short, runnable PoC.** The exact SQL, run as the role you name, and
   output showing the result, for example `select current_user,
-  usesuper from pg_user where usename = current_user` before and after.
+usesuper from pg_user where usename = current_user` before and after.
   Include cleanup steps.
 - **State the attacker's starting position.** Which role do they connect as,
   and how did they get it (the dashboard SQL editor, a database password, the

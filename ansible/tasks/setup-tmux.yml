@@ -1,7 +1,7 @@
 - name: tmux - Install tmux
   ansible.builtin.apt:
-    name: 'tmux'
-    state: 'present'
+    name: "tmux"
+    state: "present"
   become: true
 
 - name: tmux - Configure tmux alias
@@ -10,19 +10,19 @@
       case "$-" in
         *i*) alias tmux='tmux new-session -A -s supa' ;;
       esac
-    dest: '/etc/profile.d/11-tmux_alias.sh'
-    group: 'root'
-    mode: '0644'
-    owner: 'root'
+    dest: "/etc/profile.d/11-tmux_alias.sh"
+    group: "root"
+    mode: "0644"
+    owner: "root"
   become: true
 
 - name: tmux - Configure tmux
   ansible.builtin.template:
-    dest: '/etc/tmux.conf'
-    group: 'root'
-    mode: '0644'
-    owner: 'root'
-    src: 'files/tmux.conf.j2'
+    dest: "/etc/tmux.conf"
+    group: "root"
+    mode: "0644"
+    owner: "root"
+    src: "files/tmux.conf.j2"
   become: true
 
 - name: tmux - Auto-logout from stale tmux
@@ -35,8 +35,8 @@
           esac
           ;;
       esac
-    dest: '/etc/profile.d/12-tmux_logout.sh'
-    group: 'root'
-    mode: '0644'
-    owner: 'root'
+    dest: "/etc/profile.d/12-tmux_logout.sh"
+    group: "root"
+    mode: "0644"
+    owner: "root"
   become: true

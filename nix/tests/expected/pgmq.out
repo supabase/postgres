@@ -245,3 +245,15 @@ select pgmq.create('Foo');
  
 (1 row)
 
+-- drop_queue and its compat shim are created by pgmq/after-create.sql and must
+-- pin search_path, otherwise they resolve names through the caller's
+select p.oid::regprocedure::text as func, p.proconfig
+from pg_proc p
+where p.oid in ('pgmq.drop_queue(text)'::regprocedure, 'pgmq.drop_queue(text,boolean)'::regprocedure)
+order by p.pronargs;
+             func              |              proconfig              
+-------------------------------+-------------------------------------
+ pgmq.drop_queue(text)         | {"search_path=pg_catalog, pg_temp"}
+ pgmq.drop_queue(text,boolean) | {"search_path=pg_catalog, pg_temp"}
+(2 rows)
+
