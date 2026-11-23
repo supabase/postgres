@@ -3,13 +3,13 @@ description: Resolves the git sha to install packages from, honoring a flake inp
 
 inputs:
   flake_input:
-    description: 'Flake input name to resolve from flake.lock, if set'
+    description: "Flake input name to resolve from flake.lock, if set"
     required: false
-    default: ''
+    default: ""
 
 outputs:
   sha:
-    description: 'Resolved git sha'
+    description: "Resolved git sha"
     value: ${{ steps.resolve.outputs.sha }}
 
 runs:

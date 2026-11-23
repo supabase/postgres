@@ -15,6 +15,7 @@ Packer is used for creating machine images and is defined in `nix/packages/packe
 5. Run `nix flake check -L`.
 
 ### Notes:
+
 - Always check the [Packer changelog](https://github.com/hashicorp/packer/releases) for breaking changes
 - Packer uses Go, so ensure compatibility with the Go version specified in the flake inputs
 - The current Go version is specified in `flake.nix` under `nixpkgs-go124` input

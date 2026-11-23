@@ -208,6 +208,8 @@ let
       runHook postInstall
     '';
 
+    requiredSystemFeatures = (args.requiredSystemFeatures or [ ]) ++ [ "big-parallel" ];
+
     PGRX_PG_SYS_SKIP_BINDING_REWRITE = "1";
     CARGO_BUILD_INCREMENTAL = "false";
     RUST_BACKTRACE = "full";

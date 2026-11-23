@@ -32,12 +32,14 @@ Read about the binary cache in [/nix/docs/binary-cache.md](/nix/docs/binary-cach
 After updating the configuration, restart the Nix daemon:
 
 **On macOS:**
+
 ```bash
 sudo launchctl stop org.nixos.nix-daemon
 sudo launchctl start org.nixos.nix-daemon
 ```
 
 **On Linux (systemd):**
+
 ```bash
 sudo systemctl restart nix-daemon
 ```

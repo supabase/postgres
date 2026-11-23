@@ -3,25 +3,25 @@
 The multigres image is a single multi-stage `Dockerfile-multigres` that produces two
 PostgreSQL 17 variants from one build file:
 
-| Target | Tag | Port (tests) | Notes |
-|--------|-----|-------------|-------|
-| `variant-17` | `multigres-17` | 5438 | Supabase PostgreSQL 17 |
-| `variant-orioledb-17` | `multigres-orioledb-17` | 5439 | Supabase OrioleDB 17 storage engine |
+| Target                | Tag                     | Port (tests) | Notes                               |
+| --------------------- | ----------------------- | ------------ | ----------------------------------- |
+| `variant-17`          | `multigres-17`          | 5438         | Supabase PostgreSQL 17              |
+| `variant-orioledb-17` | `multigres-orioledb-17` | 5439         | Supabase OrioleDB 17 storage engine |
 
 Both variants share a common Alpine-based `base` stage that installs runtime
 dependencies, copies config files, and runs database migrations.
 
 ## Differences from standard images
 
-| | Standard images (`Dockerfile-17`, `Dockerfile-orioledb-17`) | Multigres |
-|---|---|---|
-| Entrypoint | `docker-entrypoint.sh` (auto-starts postgres + runs migrations) | `tail -f /dev/null` (postgres started manually) |
-| Config source | `/etc/postgresql/postgresql.conf` | Same |
-| Data directory | `/var/lib/postgresql/data` | Same |
-| pgsodium | Enabled | **Not enabled** (extension not created) |
-| supautils | Enabled | Enabled |
-| supabase_vault | Enabled | Enabled |
-| pgsodium_getkey.sh | Present | Present (required by vault at startup) |
+|                    | Standard images (`Dockerfile-17`, `Dockerfile-orioledb-17`)     | Multigres                                       |
+| ------------------ | --------------------------------------------------------------- | ----------------------------------------------- |
+| Entrypoint         | `docker-entrypoint.sh` (auto-starts postgres + runs migrations) | `tail -f /dev/null` (postgres started manually) |
+| Config source      | `/etc/postgresql/postgresql.conf`                               | Same                                            |
+| Data directory     | `/var/lib/postgresql/data`                                      | Same                                            |
+| pgsodium           | Enabled                                                         | **Not enabled** (extension not created)         |
+| supautils          | Enabled                                                         | Enabled                                         |
+| supabase_vault     | Enabled                                                         | Enabled                                         |
+| pgsodium_getkey.sh | Present                                                         | Present (required by vault at startup)          |
 
 ### Why `tail -f /dev/null`?
 
@@ -92,7 +92,7 @@ First, create a file named `nix.conf.extra` with the following content:
 experimental-features = nix-command flakes
 extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
 extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
- ```
+```
 
 > [!CAUTION]
 > DO NOT add anyone to `trusted-users` in `/etc/nix/nix.conf` as it [grants root without password](https://nix.dev/manual/nix/stable/command-ref/conf-file.html#conf-trusted-users). Instead, add the binary cache to `extra-substituters` and `extra-trusted-public-keys`.
@@ -122,7 +122,6 @@ $ nix --version
 nix (Nix) 2.34.6
 ```
 
-
 ### Test only (image already built)
 
 ```bash
@@ -147,42 +146,42 @@ Multigres uses a mix of shared tests and multigres-specific override tests.
 
 ### Skipped tests
 
-| Test | Reason |
-|------|--------|
-| `pgsodium` | Extension not installed |
-| `vault` | Replaced by `z_multigres-*_vault` variants |
+| Test       | Reason                                     |
+| ---------- | ------------------------------------------ |
+| `pgsodium` | Extension not installed                    |
+| `vault`    | Replaced by `z_multigres-*_vault` variants |
 
 ### Multigres-specific test files (`z_multigres-17_*`)
 
 These override the equivalent shared test when present, allowing multigres
 results to diverge from the standard expected output (e.g. no pgsodium roles):
 
-| File | Overrides | Notes |
-|------|-----------|-------|
-| `z_multigres-17_evtrigs` | `evtrigs` | No `pgsodium_trg_mask_update` trigger |
-| `z_multigres-17_ext_interface` | — | multigres-17 extension set |
-| `z_multigres-17_pg_stat_monitor` | — | |
-| `z_multigres-17_pgvector` | — | |
-| `z_multigres-17_roles` | `roles` | No pgsodium roles/permissions |
-| `z_multigres-17_rum` | — | |
-| `z_multigres-17_security` | `security` | No pgsodium security definer functions |
-| `z_multigres-17_vault` | `vault` | vault privileges for multigres |
+| File                             | Overrides  | Notes                                  |
+| -------------------------------- | ---------- | -------------------------------------- |
+| `z_multigres-17_evtrigs`         | `evtrigs`  | No `pgsodium_trg_mask_update` trigger  |
+| `z_multigres-17_ext_interface`   | —          | multigres-17 extension set             |
+| `z_multigres-17_pg_stat_monitor` | —          |                                        |
+| `z_multigres-17_pgvector`        | —          |                                        |
+| `z_multigres-17_roles`           | `roles`    | No pgsodium roles/permissions          |
+| `z_multigres-17_rum`             | —          |                                        |
+| `z_multigres-17_security`        | `security` | No pgsodium security definer functions |
+| `z_multigres-17_vault`           | `vault`    | vault privileges for multigres         |
 
 ### OrioleDB variant test files (`z_multigres-orioledb-17_*`)
 
-| File | Overrides | Notes |
-|------|-----------|-------|
-| `z_multigres-orioledb-17_docs-*` | `docs-*` | OrioleDB table access method |
-| `z_multigres-orioledb-17_evtrigs` | `evtrigs` | No pgsodium trigger |
-| `z_multigres-orioledb-17_ext_interface` | — | orioledb extension set |
-| `z_multigres-orioledb-17_extensions_schema` | — | |
-| `z_multigres-orioledb-17_pg_stat_monitor` | — | |
-| `z_multigres-orioledb-17_pgroonga` | — | |
-| `z_multigres-orioledb-17_pgvector` | — | |
-| `z_multigres-orioledb-17_roles` | `roles` | No pgsodium roles/permissions |
-| `z_multigres-orioledb-17_security` | `security` | No pgsodium security definer functions |
-| `z_multigres-orioledb-17_vault` | `vault` | vault privileges for multigres |
-| `z_multigres-orioledb-17_verify_orioledb` | — | OrioleDB-specific assertions |
+| File                                        | Overrides  | Notes                                  |
+| ------------------------------------------- | ---------- | -------------------------------------- |
+| `z_multigres-orioledb-17_docs-*`            | `docs-*`   | OrioleDB table access method           |
+| `z_multigres-orioledb-17_evtrigs`           | `evtrigs`  | No pgsodium trigger                    |
+| `z_multigres-orioledb-17_ext_interface`     | —          | orioledb extension set                 |
+| `z_multigres-orioledb-17_extensions_schema` | —          |                                        |
+| `z_multigres-orioledb-17_pg_stat_monitor`   | —          |                                        |
+| `z_multigres-orioledb-17_pgroonga`          | —          |                                        |
+| `z_multigres-orioledb-17_pgvector`          | —          |                                        |
+| `z_multigres-orioledb-17_roles`             | `roles`    | No pgsodium roles/permissions          |
+| `z_multigres-orioledb-17_security`          | `security` | No pgsodium security definer functions |
+| `z_multigres-orioledb-17_vault`             | `vault`    | vault privileges for multigres         |
+| `z_multigres-orioledb-17_verify_orioledb`   | —          | OrioleDB-specific assertions           |
 
 ### Updating expected output
 
@@ -206,24 +205,25 @@ cp /tmp/tmp.<id>/regression_output/results/z_multigres-orioledb-17_*.out nix/tes
 > Those files are patched at runtime by the test harness and will break other
 > image tests if overwritten with patched content.
 
-
 ## Updating multigres
 
 1. run `nix flake update multigres` from root of repo (it should only change `flake.lock` file)
 2. `git add flake.lock`
-3. `nix build .#pgctld` and update `nix/packages/pgctld.nix`  `vendorHash` with returned value
+3. `nix build .#pgctld` and update `nix/packages/pgctld.nix` `vendorHash` with returned value
    example `vendorHash = "sha256-cqSd6Dv0WYOVwg7AE1tZPh9uzsjDG32gF6eJzARsHo8=";`
 4. `git add nix/packages/pgctld.nix`
-5. run the tests locally with 
-  a. `nix run .#docker-image-test -- --target variant-17 Dockerfile-multigres`
-  b. `nix run .#docker-image-test -- --target variant-orioledb-17 Dockerfile-multigres`
+5. run the tests locally with
+   a. `nix run .#docker-image-test -- --target variant-17 Dockerfile-multigres`
+   b. `nix run .#docker-image-test -- --target variant-orioledb-17 Dockerfile-multigres`
 6. release the images by incrementing these values in `ansible/postgres_release.yml` by 1
 
 # Full version strings for each major version
+
 ```
 postgres_release:
   postgresorioledb-17: "17.6.0.054-orioledb"
   postgres17: "17.6.1.097"
-  postgres15: "15.14.1.097"     
+  postgres15: "15.14.1.097"    
 ```
+
 Then you can push the changes if the images pass those tests
