@@ -114,21 +114,19 @@ The following environment variables are used:
 ## Best Practices
 
 1. **Branch Management**
-
-    - Use feature branches for development
-    - Merge to develop for testing
-    - Use release branches for version-specific changes
+   - Use feature branches for development
+   - Merge to develop for testing
+   - Use release branches for version-specific changes
 
 2. **Resource Cleanup**
-
-    - Always run the cleanup step after testing
-    - Monitor AWS console for any lingering resources
-    - Use the cleanup-ami command when done with an AMI
+   - Always run the cleanup step after testing
+   - Monitor AWS console for any lingering resources
+   - Use the cleanup-ami command when done with an AMI
 
 3. **Testing**
-    - Run tests locally before pushing changes
-    - Verify AMI builds before running testinfra
-    - Check test output for any warnings or errors
+   - Run tests locally before pushing changes
+   - Verify AMI builds before running testinfra
+   - Check test output for any warnings or errors
 
 ## Additional Commands
 

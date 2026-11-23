@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       postgresVersion:
-        description: 'Optional. Postgres version to publish against, i.e. 15.1.1.78'
+        description: "Optional. Postgres version to publish against, i.e. 15.1.1.78"
         required: false
 
 permissions:
@@ -121,7 +121,6 @@ jobs:
     strategy:
       matrix:
         postgres_version: ${{ fromJson(needs.prepare.outputs.postgres_versions) }}
-
 
     steps:
       - name: Checkout Repo

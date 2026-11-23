@@ -11,7 +11,7 @@
         url: "{{salt_artifacts['url']}}"
         checksum: "{{salt_artifacts['checksum']}}"
         dest: /etc/apt/keyrings/salt-archive-keyring-2023.pgp
-        mode: '0644'
+        mode: "0644"
       register: download_result
       until: download_result is succeeded
       retries: 3
@@ -29,6 +29,14 @@
       - salt-common={{ salt_release }}
       - salt-minion={{ salt_release }}
     state: present
+
+- name: Restrict salt minion config dir
+  ansible.builtin.file:
+    path: /etc/salt/minion.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
 
 - name: Pin salt packages at major version
   ansible.builtin.copy:

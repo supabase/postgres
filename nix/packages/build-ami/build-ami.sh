@@ -123,6 +123,10 @@ common_packer_args=(
 # both templates require the same plugins, so one init covers both stages
 packer init -var-file "packer/$arch.vars.pkr.hcl" packer/stage1-nix.pkr.hcl
 
+if [[ -z ${SUPA_TRIPWIRE_URL:-} ]]; then
+	echo "::warning::SUPA_TRIPWIRE_URL is not set, building without supa-tripwire" >&2
+fi
+
 echo "::group::AMI Build: Stage 1"
 
 packer build "${common_packer_args[@]}" \
