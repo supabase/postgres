@@ -1,16 +1,30 @@
 -- migrate:up
 
--- pg_net grants used to be made by supabase_admin, and only the grantor can revoke a grant. So a
--- customer who wanted anon or authenticated out of net could not do it themselves. From now on
--- postgres is the grantor: supabase_admin gives postgres USAGE on net and EXECUTE on the http
--- functions WITH GRANT OPTION, and whatever anon, authenticated and service_role already hold is
--- granted again by postgres. New projects along with existing projects get the same three grants
--- from postgres.
+-- Goal: let postgres manage who can use pg_net.
 --
--- extensions.apply_pg_net_grants() is the only place this happens. It runs here, on every CREATE
--- or ALTER EXTENSION pg_net through the event trigger below, and from complete.sh on upgrade, so
--- one piece of code covers init, restore and upgrade. It raises on failure: the callers below
--- decide whether that is fatal.
+-- Until now the pg_net grants for anon, authenticated and service_role were made by
+-- supabase_admin. In Postgres only the grantor can revoke a grant, so a customer who wanted one of
+-- those roles out of pg_net could not do it. This led to a lot of support tickets. After this
+-- migration those grants come from postgres: the customer can revoke them, and a role revoked by
+-- the customer stays revoked.
+--
+-- extensions.apply_pg_net_grants() is the routine which does all of it. It is the only place that
+-- grants pg_net access. It runs:
+--   - at the end of this file, for projects that already have pg_net,
+--   - from the event trigger below, on every CREATE EXTENSION and ALTER EXTENSION pg_net,
+--   - from complete.sh after a pg_upgrade, once postgres is no longer a superuser.
+--
+-- Different cases the routine handles:
+--   - fresh install: the three roles, anon, authenticated and service_role, get USAGE on net and
+--     EXECUTE on the http functions from postgres,
+--   - existing project: what the three roles hold from supabase_admin is granted again by
+--     postgres, then the supabase_admin grant is removed,
+--   - a role that support or the customer revoked previously: the role holds no USAGE, so it gets
+--     nothing,
+--   - extension update that drops and recreates a function: roles that hold USAGE get EXECUTE on
+--     the new function again,
+--   - restore: the dump brings back the old grants, so this file runs after it and converts them
+--     to the required privileges post restore.
 
 create or replace function extensions.apply_pg_net_grants()
     returns void
@@ -26,14 +40,18 @@ begin
         return;
     end if;
 
-    -- Postgres records a superuser's GRANT as made by the object owner, supabase_admin. The grants
-    -- below would get the wrong grantor and step 2 would then drop the only grant a role has.
+    -- When postgres is a superuser, Postgres records its GRANTs as made by the object owner, i.e.
+    -- supabase_admin, so every grant below would get the wrong grantor and step 2 would then
+    -- remove the only grant a role has. This is the state during restore and during pg_upgrade.
+    -- Do nothing: the migration replay after restore and complete.sh after pg_upgrade run this
+    -- again once postgres is demoted.
     if exists (select from pg_roles where rolname = 'postgres' and rolsuper) then
         raise warning 'apply_pg_net_grants: postgres is a superuser, nothing changed';
         return;
     end if;
 
-    -- Looked up by name, so a pg_net release that changes an argument list does not break this.
+    -- The http functions are found by name. Earlier the script found them by argument list, which
+    -- breaks when pg_net changes one.
     select coalesce(array_agg(p.oid::regprocedure order by p.proname), '{}')
     into http_functions
     from pg_proc p
@@ -41,21 +59,26 @@ begin
     where n.nspname = 'net'
       and p.proname in ('http_get', 'http_post', 'http_delete');
 
-    -- 1. postgres can grant onward.
+    -- 1. postgres gets USAGE on the schema and EXECUTE on the http functions with grant option,
+    --    so it can grant them onward and revoke them.
     grant usage on schema net to postgres with grant option;
     foreach http_function in array http_functions loop
         execute format('grant execute on function %s to postgres with grant option', http_function);
     end loop;
 
-    --    pg_net grants ALL on its tables to PUBLIC. TRIGGER there lets any role run code as the
-    --    worker, which connects as postgres. postgres keeps TRIGGER for response handlers and
-    --    TRUNCATE for clearing the queue.
+    --    pg_net grants ALL on its tables to PUBLIC, including TRIGGER. A trigger on the queue runs
+    --    as the worker, which connects as postgres, so no role other than postgres may create one.
     revoke trigger, references, truncate on all tables in schema net from public;
     grant trigger, truncate on all tables in schema net to postgres with grant option;
 
-    -- 2. SET ROLE is not allowed inside CREATE EXTENSION, but a SECURITY DEFINER function owned by
-    --    postgres is, and its grants are postgres's. Dropped and created on every run, so a superuser
-    --    never calls a body the customer changed.
+    -- 2. The three API roles get their grants from postgres.
+    --
+    --    This function runs as supabase_admin, and to make the grant work it should ideally be made
+    --    by postgres. SET ROLE postgres will not work, as SET ROLE is not allowed inside CREATE
+    --    EXTENSION on the Supabase platform. This restriction is added by supautils.
+    --    So another way is a SECURITY DEFINER function. One owned by postgres can run there, and
+    --    its grants are recorded as made by postgres. It is dropped and created on every run, so
+    --    that a superuser never calls a function body the customer may have changed.
     drop function if exists extensions.grant_pg_net_api_access(name, regprocedure[]);
     create function extensions.grant_pg_net_api_access(api_role name, http_functions regprocedure[])
         returns void
@@ -73,10 +96,11 @@ begin
     alter function extensions.grant_pg_net_api_access(name, regprocedure[]) owner to postgres;
     revoke execute on function extensions.grant_pg_net_api_access(name, regprocedure[]) from public;
 
-    --    On a fresh install, give the three roles USAGE as supabase_admin so the loop below converts
-    --    them like an old project. pg_event_trigger_ddl_commands() only works inside an event trigger,
-    --    so this runs for CREATE EXTENSION pg_net and raises everywhere else. Elsewhere a role without
-    --    USAGE stays without: it may have been revoked (supabase support handling etc.) on purpose.
+    --    Fresh install: give the three roles USAGE as supabase_admin first, so the conversion below
+    --    treats a new project exactly like an old one. pg_event_trigger_ddl_commands() works only
+    --    inside an event trigger and raises anywhere else, which is how this block knows it runs
+    --    for CREATE EXTENSION pg_net. In any other place a role without USAGE should stay without
+    --    it, as support or the customer may have revoked it on purpose.
     begin
         perform from pg_event_trigger_ddl_commands() ev
         join pg_extension e on e.oid = ev.objid
@@ -88,10 +112,10 @@ begin
         null;
     end;
 
-    --    USAGE on net is the switch. A role that holds it, from supabase_admin before the migration
-    --    or from postgres after, gets the full set from postgres, so an extension update that drops
-    --    and recreates a function is repaired too. Whatever supabase_admin granted the three roles
-    --    goes, so a role support revoked, in full or in part, keeps nothing it cannot revoke itself.
+    --    Conversion. Every API role that holds USAGE on net, from supabase_admin on an old project
+    --    or from postgres on one already converted, gets USAGE and EXECUTE on the http functions
+    --    from postgres. A role that holds no USAGE gets nothing. Running this on every extension
+    --    update is what restores EXECUTE on a function the update recreated.
     for api_role in
         select distinct g.rolname
         from pg_namespace n
@@ -105,15 +129,15 @@ begin
     loop
         perform extensions.grant_pg_net_api_access(api_role, http_functions);
     end loop;
-    --    The helper added the row the customer can revoke. This removes the row they cannot, the
-    --    one from supabase_admin.
+    --    Remove the supabase_admin grants. The grants from postgres added above stay, so the role
+    --    keeps only what the customer can revoke.
     revoke usage on schema net from anon, authenticated, service_role;
     foreach http_function in array http_functions loop
         execute format('revoke execute on function %s from anon, authenticated, service_role', http_function);
     end loop;
 
-    -- 3. Database Webhooks run as supabase_functions_admin. Its grants stay with supabase_admin,
-    --    so a customer cannot break them, and it gets them here rather than through PUBLIC.
+    -- 3. Database Webhooks run as supabase_functions_admin. It keeps getting its grants from
+    --    supabase_admin, so a customer cannot break webhooks by revoking them.
     if exists (select from pg_roles where rolname = 'supabase_functions_admin') then
         grant usage on schema net to supabase_functions_admin;
         foreach http_function in array http_functions loop
@@ -125,10 +149,9 @@ $$;
 
 revoke execute on function extensions.apply_pg_net_grants() from public, postgres;
 
--- The event trigger on CREATE EXTENSION used to grant the five roles itself, with the full
--- argument lists of http_get and http_post spelled out. Now it calls the routine. The routine
--- doesn't catches errors, so one here aborts the CREATE or ALTER EXTENSION and the customer sees
--- the message instead of a server log line.
+-- The event trigger used to grant the five roles itself, with the argument lists of http_get and
+-- http_post spelled out. Now it calls the routine. The routine does not catch errors, so a failure
+-- aborts the CREATE or ALTER EXTENSION.
 create or replace function extensions.grant_pg_net_access()
     returns event_trigger
     language plpgsql
@@ -151,15 +174,23 @@ begin
 end;
 $$;
 
--- An extension update can drop and recreate a function, which loses every grant on it.
+-- Fires on ALTER EXTENSION too: an extension update can drop and recreate a function, which loses
+-- every grant on it, and the routine grants it again.
 drop event trigger if exists issue_pg_net_access;
 create event trigger issue_pg_net_access
     on ddl_command_end
     when tag in ('CREATE EXTENSION', 'ALTER EXTENSION')
     execute procedure extensions.grant_pg_net_access();
 
--- Init and restore run this file with ON_ERROR_STOP, and complete.sh runs it on upgrade, so a
--- failed conversion is a warning here and the project keeps its current grants.
+-- Everything above only defines the routine and the trigger. The trigger fires on the next CREATE
+-- or ALTER EXTENSION pg_net, which on a project that already has pg_net may never happen. So run
+-- the routine once here, to convert the grants that project holds today.
+--
+-- The exception block turns a failure into a warning on purpose. This file runs under
+-- ON_ERROR_STOP: through dbmate at init and restore, and through complete.sh after pg_upgrade. An
+-- error here would abort the whole run and leave the project half migrated or half upgraded. A
+-- warning leaves it on its current grants, which still work, and the next CREATE or ALTER
+-- EXTENSION runs the routine again.
 do $$
 begin
     perform extensions.apply_pg_net_grants();

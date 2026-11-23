@@ -1,3 +1,6 @@
+-- Checks who holds what on pg_net after extensions.apply_pg_net_grants() runs, in each state a
+-- project can be in: fresh, existing, support revoked a role, upgraded, superuser postgres.
+--
 -- pg_net grants are made by postgres, not supabase_admin, so a customer can revoke anon,
 -- authenticated and service_role themselves. extensions.apply_pg_net_grants() does that. It runs
 -- from the migration and from the event trigger on CREATE and ALTER EXTENSION pg_net.

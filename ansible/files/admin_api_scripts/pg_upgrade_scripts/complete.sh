@@ -238,15 +238,25 @@ EOF
 	return $rc
 }
 
-# Runs the pg_net grants migration (migrations/db/migrations/20261106000000_pg_net_grants_as_postgres.sql)
-# on the upgraded project. Running projects never replay migrations, only new and restored ones do,
-# so this is how they get extensions.apply_pg_net_grants() and the event trigger that calls it. The
-# file ends by running the routine, which hands the pg_net grants of anon, authenticated and
-# service_role to postgres. It must run after ALTER USER postgres WITH NOSUPERUSER: while postgres is
-# a superuser its grants are recorded as made by supabase_admin, and the routine refuses to run.
-# The file is put next to the scripts by ansible. Fail-soft like execute_patches.
-# One transaction: without it a failure after the drop of the event trigger would leave the
-# project with no trigger, so every later create extension pg_net would install with no grants.
+# Runs the pg_net grants migration on the upgraded project:
+# migrations/db/migrations/20261106000000_pg_net_grants_as_postgres.sql, copied next to this
+# script by ansible as pg_net_grants.sql.
+#
+# Why here: only new and restored projects replay migrations. A running project gets new
+# migrations only through pg_upgrade, and this is the step that applies this one. The file
+# creates extensions.apply_pg_net_grants() and the event trigger that calls it, then runs the
+# routine once, which moves the pg_net grants of anon, authenticated and service_role from
+# supabase_admin to postgres.
+#
+# Why at step 4.2: it must run after ALTER USER postgres WITH NOSUPERUSER. While postgres is a
+# superuser its grants are recorded as made by supabase_admin, and the routine does nothing.
+#
+# Why one transaction (-1): the file drops the event trigger and creates it again. A failure in
+# between would leave the project with no trigger, so every later create extension pg_net would
+# install pg_net with no grants at all.
+#
+# Fail-soft: a failure is logged as a warning and the upgrade completes with the grants the 
+# project had before.
 function execute_pg_net_grants {
 	local rc=0
 	local sql_file="$SCRIPT_DIR/pg_net_grants.sql"
