@@ -1,0 +1,43 @@
+modes:
+  files: ["0644", "0640", "0600", "0440", "0755"]
+  dirs: ["0755", "0750", "0700"]
+
+roots:
+  - /etc
+  - /usr/local
+  - /opt
+  - /data
+  - /var/lib
+
+owners:
+  /etc/wal-g: wal-g:wal-g
+  /etc/postgresql: postgres:postgres
+  /etc/postgresql-custom: postgres:postgres
+  /data/pgdata: postgres:postgres
+  /home/postgres: postgres:postgres
+  /var/lib/postgresql: postgres:postgres
+  /var/log/postgresql: postgres:postgres
+
+setuid:
+  - /usr/lib/dbus-1.0/dbus-daemon-launch-helper
+  - /usr/lib/polkit-1/polkit-agent-helper-1
+  - /usr/sbin/pam_extrausers_chkpwd
+  - /usr/sbin/unix_chkpwd
+
+exceptions:
+  - path: /etc/nix
+    reason: nix config directory ships 0555
+  - path: /usr/local/bin/gosu
+    reason: gosu binary installed 0711
+  - path: /usr/local/bin/wal-g
+    reason: wal-g binary installed 0555
+  - path: /var/local
+    reason: Ubuntu base default 2775
+  - path: /var/mail
+    reason: Ubuntu base default 2775
+  - path: /var/log/btmp
+    reason: Ubuntu base default 0660
+  - path: /var/log/lastlog
+    reason: Ubuntu base default 0664
+  - path: /var/log/wtmp
+    reason: Ubuntu base default 0664
