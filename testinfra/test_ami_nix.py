@@ -1920,6 +1920,7 @@ def test_coredump_processor_produces_diagnostic_bundle_and_deletes_raw_core(host
             "coredump processor not installed on this AMI (not an OrioleDB build)"
         )
 
+    # Blocks until an in-flight run ends, so its bundle is not counted as new.
     run_ssh_command(host["ssh"], "sudo systemctl start orioledb-coredump.service")
 
     before_bundles = set(
@@ -1931,9 +1932,11 @@ def test_coredump_processor_produces_diagnostic_bundle_and_deletes_raw_core(host
 
     _crash_a_backend_and_wait_for_recovery(host)
 
+    poll_interval = 2
+    attempts = 75
     new_bundle = None
-    for _ in range(75):
-        sleep(2)
+    for _ in range(attempts):
+        sleep(poll_interval)
         current = set(
             run_ssh_command(
                 host["ssh"],
@@ -1946,7 +1949,8 @@ def test_coredump_processor_produces_diagnostic_bundle_and_deletes_raw_core(host
             break
     assert new_bundle, (
         "Expected a new diagnostic bundle under /var/lib/orioledb-coredumps/diagnostics "
-        "after the induced backend crash, but none appeared within 150s\n"
+        "after the induced backend crash, but none appeared within "
+        f"{attempts * poll_interval}s\n"
         + run_ssh_command(
             host["ssh"],
             "sudo journalctl -u orioledb-coredump.service --no-pager -n 50 2>&1; "
