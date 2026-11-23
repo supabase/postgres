@@ -92,7 +92,7 @@ jobs:
       matrix:
         postgres: ${{ fromJson(needs.prepare.outputs.matrix_config).include }}
         arch: [amd64, arm64]
-    runs-on: ${{ matrix.arch == 'amd64' && 'blacksmith-8vcpu-ubuntu-2404' || 'large-linux-arm' }}
+    runs-on: ${{ matrix.arch == 'amd64' && 'blacksmith-8vcpu-ubuntu-2404' || 'blacksmith-8vcpu-ubuntu-2404-arm' }}
     timeout-minutes: 180
     steps:
       - name: Checkout Repo
