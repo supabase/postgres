@@ -43,10 +43,6 @@ exec >"$LOG_FILE" 2>&1
 # common.sh redefines it with the real implementation.
 log() { echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') $*"; }
 
-# Log any unexpected failure (set -e) with the line number and failing command,
-# so that no error can end the script silently.
-trap 'log "initiate.sh FAILED at line $LINENO: \"$BASH_COMMAND\" (exit code $?)"' ERR
-
 # Source the shared helpers (log and ship_logs functions)
 # shellcheck disable=SC1091
 source "$SCRIPT_DIR/common.sh" || {
@@ -154,16 +150,20 @@ cleanup() {
 	# can fail under set -e, or the restart below would be refused.
 	unblock_postgres_start || log "WARNING: failed to lift the postgres start block; check /run/systemd/system/postgresql.service.d"
 
-	# ship $LOG_FILE content to reporting project (see common.sh)
-	ship_logs "$LOG_FILE" || true
-
 	if [ -d "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" ]; then
 		log "Copying pg_upgrade output to /var/log"
 		cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/ || true
 		chown -R postgres:postgres /var/log/pg_upgrade_output.d/
 		chmod -R 0750 /var/log/pg_upgrade_output.d/
-		tail -n +1 /var/log/pg_upgrade_output.d/*/* >/var/log/pg_upgrade_output.d/pg_upgrade.log || true
-		ship_logs "/var/log/pg_upgrade_output.d/pg_upgrade.log" || true
+		for file in /var/log/pg_upgrade_output.d/*/*; do
+			log "pg_upgrade_output file: $file"
+			if [ -f "$file" ]; then
+				cat "$file" >>"$LOG_FILE" 2>/dev/null || true
+			fi
+		done
+
+		log "end of pg_upgrade outputs"
+
 	fi
 
 	log "Restarting postgresql"
@@ -213,6 +213,9 @@ EOF
 	fi
 	echo "$UPGRADE_STATUS" >/tmp/pg-upgrade-status
 
+	# ship $LOG_FILE content to reporting project (see common.sh)
+	ship_logs "$LOG_FILE" || true
+
 	if [ -z "$IS_CI" ]; then
 		exit "$EXIT_CODE"
 	else
@@ -241,7 +244,8 @@ on_exit() {
 	fi
 	unblock_postgres_start || log "WARNING: failed to lift the postgres start block; check /run/systemd/system/postgresql.service.d"
 
-	log "initiate.sh ended"
+	# ship $LOG_FILE content to reporting project (see common.sh)
+	ship_logs "$LOG_FILE" || true
 
 	exit "$exit_code"
 }
@@ -820,7 +824,6 @@ echo "running" >/tmp/pg-upgrade-status
 if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
 	log "initiate.sh started"
 	initiate_upgrade >>"$LOG_FILE" 2>&1 &
-	log "Upgrade initiate job completed"
 else
 	rm -f /tmp/pg-upgrade-status
 	initiate_upgrade
