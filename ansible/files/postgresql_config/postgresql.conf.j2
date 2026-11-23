@@ -757,6 +757,9 @@ dynamic_library_path = '/nix/var/nix/profiles/site/lib/postgresql:$libdir'
 #include_if_exists = '...'		# include file only if it exists
 #include = '...'			# include file
 
+# Supabase Platform Defaults
+include_if_exists = '/etc/postgresql-custom/platform-defaults.conf'
+
 # Automatically generated optimizations
 #include = '/etc/postgresql-custom/generated-optimizations.conf'
 # User-supplied custom parameters, override any automatically generated ones

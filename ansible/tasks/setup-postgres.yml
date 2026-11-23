@@ -107,6 +107,14 @@
         group: "postgres"
         src: "files/postgresql_config/custom_read_replica.conf"
 
+    - name: Move platform-defaults.conf file to /etc/postgresql-custom/platform-defaults.conf
+      ansible.builtin.copy:
+        dest: "/etc/postgresql-custom/platform-defaults.conf"
+        mode: "0644"
+        owner: "postgres"
+        group: "postgres"
+        src: "files/postgresql_config/platform-defaults.conf"
+
     - name: Create placeholder pam config
       ansible.builtin.file:
         path: "/etc/pam.d/postgresql"
