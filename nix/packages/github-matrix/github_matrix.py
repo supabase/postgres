@@ -433,7 +433,7 @@ def main() -> None:
                         "attr": "",
                         "name": "no checks to build",
                         "system": system,
-                        "runs_on": {"labels": ["ubuntu-latest"]},
+                        "runs_on": {"labels": ["ubuntu-slim"]},
                     }
                 ]
             }
@@ -444,7 +444,7 @@ def main() -> None:
                         "attr": "",
                         "name": "no packages to build",
                         "system": system,
-                        "runs_on": {"labels": ["ubuntu-latest"]},
+                        "runs_on": {"labels": ["ubuntu-slim"]},
                     }
                 ]
             }

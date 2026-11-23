@@ -218,7 +218,7 @@ class TestSelectSystemMatrices:
             "attr": attr,
             "name": attr or "no packages to build",
             "system": system,
-            "runs_on": {"labels": ["ubuntu-latest"]},
+            "runs_on": {"labels": ["ubuntu-slim"]},
         }
 
     def test_picks_the_system_and_ignores_placeholders(self):
