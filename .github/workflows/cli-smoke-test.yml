@@ -44,7 +44,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        pg_version: ['15', '17']
+        pg_version: ["15", "17"]
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v7.0.1

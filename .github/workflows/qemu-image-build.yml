@@ -13,8 +13,8 @@ on:
         default: false
     secrets:
       DEV_AWS_ROLE:
-        description: AWS role for pushing the stamp to the Nix binary cache (optional)
-        required: false
+        description: AWS role used to fetch the supa-tripwire archive and push the stamp to the Nix binary cache
+        required: true
       NIX_SIGN_SECRET_KEY:
         description: Nix signing secret key for the stamp (optional)
         required: false
@@ -41,6 +41,7 @@ permissions:
 
 jobs:
   build:
+    name: 🦤17 ${{ inputs.arch == 'amd64' && '🐧x86' || '🐧arm' }}
     runs-on: ${{ inputs.arch == 'amd64' && 'blacksmith-16vcpu-ubuntu-2404' || 'arm-native-runner' }}
     env:
       # only builds pg17 atm
@@ -57,6 +58,12 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v7.0.1
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          aws-region: us-east-1
 
       - name: Install Nix
         uses: $/.github/actions/install-nix
@@ -119,6 +126,15 @@ jobs:
               "$QEMU" -machine "$MACHINE,accel=kvm" -cpu host \
               -m 128M -nodefaults -display none -S -qmp stdio |
             jq -se 'any(.[]; .return.enabled == true)'
+
+      - name: Presign supa-tripwire archive
+        if: steps.stamp.outputs.cached != 'true'
+        env:
+          ARCH: ${{ env.TARGET_ARCH }}
+        run: |
+          url=$(ci/presign-supa-tripwire.sh "$ARCH")
+          echo "::add-mask::$url"
+          echo "SUPA_TRIPWIRE_URL=$url" >>"$GITHUB_ENV"
 
       - name: Build QEMU artifact
         if: steps.stamp.outputs.cached != 'true'

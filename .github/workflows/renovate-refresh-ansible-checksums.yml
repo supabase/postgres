@@ -1,0 +1,103 @@
+name: Renovate Refresh Ansible Checksums
+
+# Renovate bumps a version in ansible/vars.yml but cannot work out the new checksums.
+# This workflow works them out and pushes them to the PR branch.
+#
+# The Mend-hosted Renovate app cannot do this itself.
+# It only allows a short fixed list of post-upgrade commands.
+# If we run our own Renovate later, postUpgradeTasks could do this job and this workflow could go away.
+#
+# It pushes with a GitHub App token.
+# A push made with GITHUB_TOKEN does not start CI.
+# The app token is only created when there is something to push.
+#
+# The commit author is listed in gitIgnoredAuthors in renovate.json5.
+# Renovate treats a PR as edited when someone else adds a commit to its branch.
+# When that happens, Renovate stops rebasing the PR and stops updating its version.
+# Listing the author tells Renovate to ignore our commits, so the PR keeps updating.
+#
+# Renovate force-pushes over our commit whenever it rebases.
+# That starts this workflow again, and it adds the commit back.
+
+on:
+  pull_request:
+    paths:
+      - ansible/vars.yml
+
+concurrency:
+  group: renovate-refresh-ansible-checksums-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  refresh-checksums:
+    if: >-
+      github.event.pull_request.user.login == 'renovate[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          # The app token is added at push time, only if we need it.
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: $/.github/actions/install-nix
+
+      - name: Refresh checksums
+        id: refresh
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -euo pipefail
+
+          # Find the tools whose *_release line this PR changed.
+          changed=$(git diff -U0 "origin/$BASE_REF...HEAD" -- ansible/vars.yml | sed -En 's/^\+([a-z_]*)_release: *"?([^" #]*).*/\1 \2/p')
+          if [[ -z $changed ]]; then
+            echo "No *_release line changed. Nothing to do."
+            echo "changed=false" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          while read -r tool version; do
+            echo "::group::$tool $version"
+            nix run .#update-ansible-artifacts -- "$tool" "$version"
+            echo "::endgroup::"
+          done <<<"$changed"
+
+          if git diff --quiet -- ansible/vars.yml; then
+            echo "Checksums are already up to date."
+            echo "changed=false" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # This is the identity of the GitHub App that creates the push token below.
+          # GitHub shows the commit as coming from the app.
+          # The email must match gitIgnoredAuthors in renovate.json5.
+          git config user.name "sb-postgres-bot[bot]"
+          git config user.email "306028907+sb-postgres-bot[bot]@users.noreply.github.com"
+          git add ansible/vars.yml
+          git commit -m "chore(ansible): refresh artifact checksums"
+          echo "changed=true" >>"$GITHUB_OUTPUT"
+
+      - name: Generate app token
+        if: steps.refresh.outputs.changed == 'true'
+        id: app-token
+        uses: actions/create-github-app-token@v3.3.0
+        with:
+          client-id: ${{ secrets.UPDATE_APP_ID }}
+          private-key: ${{ secrets.UPDATE_APP_PRIVATE_KEY }}
+          permission-contents: write
+
+      - name: Push updated checksums
+        if: steps.refresh.outputs.changed == 'true'
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          git push "https://x-access-token:$APP_TOKEN@github.com/$REPOSITORY.git" "HEAD:$HEAD_REF"
