@@ -48,11 +48,11 @@
 
 - name: gotrue - install platform env file
   ansible.builtin.copy:
-    src: 'files/auth.d/80_platform.env'
-    dest: '/etc/auth.d/80_platform.env'
+    src: "files/auth.d/80_platform.env"
+    dest: "/etc/auth.d/80_platform.env"
     owner: root
     group: root
-    mode: '0644'
+    mode: "0644"
 
 # libpq is a C library that enables user programs to communicate with
 # the PostgreSQL database server.
