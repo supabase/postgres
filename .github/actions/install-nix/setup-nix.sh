@@ -39,6 +39,11 @@ if [[ -e /dev/kvm ]]; then
 	sudo chown runner /dev/kvm
 	sudo chmod 666 /dev/kvm
 	echo 'extra-system-features = kvm' >>"$tmpdir/nix.conf"
+elif [[ $(uname -s) == Linux ]]; then
+	# No KVM here (for example Blacksmith arm runners).
+	# Claim the feature anyway so VM tests can build.
+	# QEMU then falls back to slow software emulation.
+	echo 'extra-system-features = kvm' >>"$tmpdir/nix.conf"
 fi
 
 if [[ ${PUSH_TO_CACHE:?} == true ]]; then
