@@ -255,7 +255,7 @@ EOF
 # between would leave the project with no trigger, so every later create extension pg_net would
 # install pg_net with no grants at all.
 #
-# Fail-soft: a failure is logged as a warning and the upgrade completes with the grants the 
+# Fail-soft: a failure is logged as a warning and the upgrade completes with the grants the
 # project had before.
 function execute_pg_net_grants {
 	local rc=0
