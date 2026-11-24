@@ -44,7 +44,7 @@ jobs:
     name: 🐳${{ matrix.name }}
     needs: check-changes
     if: needs.check-changes.outputs.should_run == 'true'
-    runs-on: large-linux-arm
+    runs-on: blacksmith-8vcpu-ubuntu-2404-arm
     timeout-minutes: 120
     strategy:
       fail-fast: false
