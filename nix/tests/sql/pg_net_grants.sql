@@ -152,3 +152,15 @@ alter role postgres superuser;
 select extensions.apply_pg_net_grants();
 alter role postgres nosuperuser;
 select * from net_acl;
+
+-- 10. postgres can restart the worker and grant that onward. pg_net 1.0.0 stops granting it to
+--     PUBLIC, and the customer administers pg_net as postgres
+select case a.grantee when 0 then 'PUBLIC' else a.grantee::regrole::text end as grantee,
+       a.grantor::regrole::text as grantor,
+       a.is_grantable
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace
+cross join lateral aclexplode(p.proacl) a
+where n.nspname = 'net'
+  and p.proname = 'worker_restart'
+order by grantee collate "C";

@@ -66,6 +66,14 @@ begin
         execute format('grant execute on function %s to postgres with grant option', http_function);
     end loop;
 
+    --    pg_net 1.0.0 stops granting worker_restart to PUBLIC and leaves it to the extension owner.
+    --    Here the owner is supabase_admin, and the customer administers pg_net as postgres: changes
+    --    a setting, restarts the worker, brings it back when it died. So postgres gets it the same
+    --    way as the http functions, with grant option, so it can hand it to its own roles.
+    if to_regprocedure('net.worker_restart()') is not null then
+        grant execute on function net.worker_restart() to postgres with grant option;
+    end if;
+
     --    pg_net grants ALL on its tables to PUBLIC, including TRIGGER. A trigger on the queue runs
     --    as the worker, which connects as postgres, so no role other than postgres may create one.
     revoke trigger, references, truncate on all tables in schema net from public;
