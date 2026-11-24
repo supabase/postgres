@@ -42,7 +42,7 @@ supa_tripwire_sha256:
   amd64: 34ae45b30fb9643de35053e16b5afab2cec4e120e8ebdb7a45e0dcb7e2e43333
   arm64: 114ae6925e1fef0776e7341d04f34a6ea0cf8182e85a17dcc2688e68dc28bbf1
 # renovate: datasource=github-tags packageName=aws/aws-cli
-aws_cli_release: 2.42.2
+aws_cli_release: 2.42.3
 aws_cli_artifacts:
   amd64:
     url: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-{{ aws_cli_release }}.zip"
