@@ -252,18 +252,14 @@ process_one() {
 	fi
 }
 
-list_cores() {
+list_pids() {
 	local out
 	for _ in {1..10}; do
 		out=$(coredumpctl --no-pager --json=short list 2>/dev/null || true)
-		if [ -z "$out" ] || jq -e . >/dev/null 2>&1 <<<"$out"; then
-			printf '%s' "$out"
-			return 0
-		fi
+		[[ -z $out ]] || jq -e . >/dev/null 2>&1 <<<"$out" && break
 		sleep 2
 	done
-	log "coredumpctl list output is not valid JSON"
-	return 1
+	jq -r '.[] | select(.corefile == "present" and (.exe | endswith("/.postgres-wrapped"))) | .pid' <<<"$out"
 }
 
 main() {
@@ -275,11 +271,10 @@ main() {
 	# Enumerate via coredumpctl and filter out non-postgres cores
 	# Re-list after each pass: the path unit drops events while this runs.
 	local rc=0
-	local pid cores n=-1
+	local pid n=-1
 	local -A tried=()
 	while [ "$n" -ne "${#tried[@]}" ]; do
 		n=${#tried[@]}
-		cores=$(list_cores) || return 1
 		while read -r pid; do
 			[ -z "$pid" ] && continue
 			[ -n "${tried[$pid]:-}" ] && continue
@@ -288,7 +283,7 @@ main() {
 				log "pid ${pid}: processing failed, will retry on next run"
 				rc=1
 			}
-		done < <(jq -r '.[] | select(.corefile == "present" and (.exe | endswith("/.postgres-wrapped"))) | .pid' <<<"$cores")
+		done < <(list_pids)
 	done
 
 	return "$rc"
