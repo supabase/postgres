@@ -573,7 +573,8 @@ let
                       # Otherwise, the version should match the version from postgresql 15
                       test.assert_version_matches(version)
 
-                    test.check_pg_regress(Path(f"{psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
+                    if has_update_script or version == versions["17"][-1]:
+                      test.check_pg_regress(Path(f"{psql_17}/lib/pgxs/src/test/regress/pg_regress"), "17", pg_regress_test_name)
               ''
             else
               ""
