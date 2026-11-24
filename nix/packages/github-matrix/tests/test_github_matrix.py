@@ -13,6 +13,7 @@ from github_matrix import (
     is_large_pkg,
     select_system_matrices,
     sort_pkgs_by_closures,
+    waits_for_other_jobs,
 )
 
 
@@ -110,7 +111,7 @@ class TestGetRunnerForPackage:
             (
                 "aarch64-linux",
                 "kvm",
-                {"labels": ["arm-native-runner"]},
+                {"labels": ["blacksmith-8vcpu-ubuntu-2404-arm"]},
             ),
             (
                 "aarch64-linux",
@@ -125,7 +126,7 @@ class TestGetRunnerForPackage:
             (
                 "x86_64-linux",
                 "kvm",
-                {"labels": ["blacksmith-16vcpu-ubuntu-2404"]},
+                {"labels": ["blacksmith-8vcpu-ubuntu-2404"]},
             ),
             (
                 "x86_64-linux",
@@ -218,7 +219,7 @@ class TestSelectSystemMatrices:
             "attr": attr,
             "name": attr or "no packages to build",
             "system": system,
-            "runs_on": {"labels": ["ubuntu-latest"]},
+            "runs_on": {"labels": ["ubuntu-slim"]},
         }
 
     def test_picks_the_system_and_ignores_placeholders(self):
@@ -250,3 +251,35 @@ class TestSelectSystemMatrices:
         }
         _, _, others = select_system_matrices(packages, checks, "x86_64-linux")
         assert others == ["aarch64-linux"]
+
+
+class TestWaitsForOtherJobs:
+    def pkg(self, drv: str, needed: list[str]) -> NixEvalJobsOutput:
+        return {
+            "attr": "legacyPackages.x86_64-linux.a",
+            "attrPath": ["legacyPackages", "x86_64-linux", "a"],
+            "cacheStatus": "notBuilt",
+            "drvPath": drv,
+            "name": "a",
+            "system": "x86_64-linux",
+            "neededBuilds": needed,
+        }
+
+    def test_leaf_package(self):
+        # Only needs itself, which is how nix-eval-jobs lists a package with no unbuilt inputs.
+        assert not waits_for_other_jobs(self.pkg("/a.drv", ["/a.drv"]), {"/a.drv"})
+
+    def test_depends_on_matrix_job(self):
+        assert waits_for_other_jobs(
+            self.pkg("/b.drv", ["/a.drv", "/b.drv"]), {"/a.drv", "/b.drv"}
+        )
+
+    def test_depends_on_build_outside_matrix(self):
+        assert not waits_for_other_jobs(
+            self.pkg("/b.drv", ["/dep.drv", "/b.drv"]), {"/b.drv"}
+        )
+
+    def test_missing_needed_builds(self):
+        pkg = self.pkg("/b.drv", [])
+        del pkg["neededBuilds"]
+        assert not waits_for_other_jobs(pkg, {"/b.drv"})
