@@ -89,6 +89,7 @@ in
 {
   # wal-g v2.0.1
   wal-g-2 = walGCommon {
+    # renovate: datasource=github-tags depName=wal-g-2 packageName=wal-g/wal-g extractVersion=^v(?<version>.+)$
     version = "2.0.1";
     sha256 = "sha256-5mwA55aAHwEFabGZ6c3pi8NLcYofvoe4bb/cFj7NWok=";
     vendorHash = "sha256-BbQuY6r30AkxlCZjY8JizaOrqEBdv7rIQet9KQwYB/g=";
@@ -98,6 +99,7 @@ in
   # wal-g v3.0.8 — installed alongside v2 (INDATA-904).
   # OrioleDB support + backward-compat validation; binary is wal-g-3.
   wal-g-3 = walGCommon {
+    # renovate: datasource=github-tags depName=wal-g-3 packageName=wal-g/wal-g extractVersion=^v(?<version>.+)$
     version = "3.0.9";
     sha256 = "sha256-QTPgJuCuLxlBqa2QAhV91qX4XTQHIvzAQDntchGpxrQ=";
     vendorHash = "sha256-m+X6WIdBjMU88tgwkS46lL6YwyGB0FoO3aCXCAUQzpo=";
