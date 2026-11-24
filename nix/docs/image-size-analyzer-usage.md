@@ -68,36 +68,36 @@ diff before.json after.json
 Add a job that fails if images exceed a size threshold:
 
 ```yaml
-  check-size-threshold:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+check-size-threshold:
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
 
-      - name: Install Nix
-        uses: cachix/install-nix-action@v27
-        with:
-          extra_nix_config: |
-            extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
-            extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
+    - name: Install Nix
+      uses: cachix/install-nix-action@v27
+      with:
+        extra_nix_config: |
+          extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
+          extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
 
-      - name: Check image sizes
-        run: |
-          nix run .#image-size-analyzer -- --json > sizes.json
+    - name: Check image sizes
+      run: |
+        nix run .#image-size-analyzer -- --json > sizes.json
 
-          # Set threshold (2.5 GB in bytes)
-          THRESHOLD=2684354560
+        # Set threshold (2.5 GB in bytes)
+        THRESHOLD=2684354560
 
-          # Check each image
-          for dockerfile in Dockerfile-15 Dockerfile-17 Dockerfile-orioledb-17; do
-            size=$(jq -r ".images[] | select(.dockerfile == \"$dockerfile\") | .total_size_bytes" sizes.json)
-            if [ "$size" -gt "$THRESHOLD" ]; then
-              echo "ERROR: $dockerfile exceeds size threshold"
-              echo "  Size: $((size / 1048576)) MB"
-              echo "  Threshold: $((THRESHOLD / 1048576)) MB"
-              exit 1
-            fi
-            echo "OK: $dockerfile = $((size / 1048576)) MB"
-          done
+        # Check each image
+        for dockerfile in Dockerfile-15 Dockerfile-17 Dockerfile-orioledb-17; do
+          size=$(jq -r ".images[] | select(.dockerfile == \"$dockerfile\") | .total_size_bytes" sizes.json)
+          if [ "$size" -gt "$THRESHOLD" ]; then
+            echo "ERROR: $dockerfile exceeds size threshold"
+            echo "  Size: $((size / 1048576)) MB"
+            echo "  Threshold: $((THRESHOLD / 1048576)) MB"
+            exit 1
+          fi
+          echo "OK: $dockerfile = $((size / 1048576)) MB"
+        done
 ```
 
 ### Size Regression Check
@@ -105,49 +105,49 @@ Add a job that fails if images exceed a size threshold:
 Compare against a baseline to catch size regressions:
 
 ```yaml
-  check-size-regression:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Need full history for base branch
+check-size-regression:
+  runs-on: ubuntu-latest
+  steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Need full history for base branch
 
-      - name: Install Nix
-        uses: cachix/install-nix-action@v27
-        with:
-          extra_nix_config: |
-            extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
-            extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
+    - name: Install Nix
+      uses: cachix/install-nix-action@v27
+      with:
+        extra_nix_config: |
+          extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
+          extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
 
-      - name: Analyze PR branch
-        run: |
-          nix run .#image-size-analyzer -- --image Dockerfile-17 --json > pr-sizes.json
+    - name: Analyze PR branch
+      run: |
+        nix run .#image-size-analyzer -- --image Dockerfile-17 --json > pr-sizes.json
 
-      - name: Analyze base branch
-        run: |
-          git checkout ${{ github.base_ref }}
-          nix run .#image-size-analyzer -- --image Dockerfile-17 --json > base-sizes.json
-          git checkout -
+    - name: Analyze base branch
+      run: |
+        git checkout ${{ github.base_ref }}
+        nix run .#image-size-analyzer -- --image Dockerfile-17 --json > base-sizes.json
+        git checkout -
 
-      - name: Compare sizes
-        run: |
-          PR_SIZE=$(jq -r '.images[0].total_size_bytes' pr-sizes.json)
-          BASE_SIZE=$(jq -r '.images[0].total_size_bytes' base-sizes.json)
+    - name: Compare sizes
+      run: |
+        PR_SIZE=$(jq -r '.images[0].total_size_bytes' pr-sizes.json)
+        BASE_SIZE=$(jq -r '.images[0].total_size_bytes' base-sizes.json)
 
-          DIFF=$((PR_SIZE - BASE_SIZE))
-          DIFF_MB=$((DIFF / 1048576))
+        DIFF=$((PR_SIZE - BASE_SIZE))
+        DIFF_MB=$((DIFF / 1048576))
 
-          # Allow up to 50MB increase
-          MAX_INCREASE=52428800
+        # Allow up to 50MB increase
+        MAX_INCREASE=52428800
 
-          if [ "$DIFF" -gt "$MAX_INCREASE" ]; then
-            echo "ERROR: Image size increased by ${DIFF_MB}MB (max allowed: 50MB)"
-            echo "Base: $((BASE_SIZE / 1048576))MB"
-            echo "PR: $((PR_SIZE / 1048576))MB"
-            exit 1
-          fi
+        if [ "$DIFF" -gt "$MAX_INCREASE" ]; then
+          echo "ERROR: Image size increased by ${DIFF_MB}MB (max allowed: 50MB)"
+          echo "Base: $((BASE_SIZE / 1048576))MB"
+          echo "PR: $((PR_SIZE / 1048576))MB"
+          exit 1
+        fi
 
-          echo "Size change: ${DIFF_MB}MB"
+        echo "Size change: ${DIFF_MB}MB"
 ```
 
 ---
