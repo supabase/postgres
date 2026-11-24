@@ -145,7 +145,7 @@ let
   versionsBuilt = if latestOnly then [ latestVersion ] else versions;
   numberOfVersionsBuilt = builtins.length versionsBuilt;
 in
-(pkgs.buildEnv {
+pkgs.buildEnv {
   name = pname;
   paths = packages;
   nativeBuildInputs = [ makeWrapper ];
@@ -194,7 +194,4 @@ in
       else
         "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
   };
-}).overrideAttrs
-  (_: {
-    requiredSystemFeatures = [ "big-parallel" ];
-  })
+}
