@@ -24,6 +24,7 @@ jobs:
     name: ❄️Eval
     runs-on: blacksmith-32vcpu-ubuntu-2404
     outputs:
+      leaf_packages_matrix: ${{ steps.gen-matrix.outputs.leaf_packages_matrix }}
       packages_matrix: ${{ steps.gen-matrix.outputs.packages_matrix }}
       checks_matrix: ${{ steps.gen-matrix.outputs.checks_matrix }}
     steps:
@@ -98,9 +99,38 @@ jobs:
           path: /tmp/drvpaths/${{ inputs.system }}.json
           retention-days: ${{ github.event_name == 'merge_group' && 90 || 1 }}
 
-  builds:
+  leaf-builds:
     name: ❄️🔨${{ matrix.name }}${{ matrix.postgresql_version && format(' {0}', matrix.postgresql_version) || '' }} ${{ inputs.system == 'aarch64-darwin' && '🍎arm' || inputs.system == 'aarch64-linux' && '🐧arm' || '🐧x86' }}
     needs: eval
+    runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
+    strategy:
+      fail-fast: false
+      max-parallel: 25
+      matrix: ${{ fromJSON(needs.eval.outputs.leaf_packages_matrix) }}
+    steps:
+      - name: Checkout Repo
+        if: ${{ matrix.attr != '' }}
+        uses: actions/checkout@v7.0.1
+      - name: Install nix
+        if: ${{ matrix.attr != '' }}
+        uses: $/.github/actions/install-nix
+        with:
+          push-to-cache: true
+          nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
+          role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+      - name: nix build
+        if: ${{ matrix.attr != '' }}
+        uses: $/.github/actions/nix-build-retry
+        with:
+          attr: .#${{ matrix.attr }}
+
+  builds:
+    name: ❄️🔨${{ matrix.name }}${{ matrix.postgresql_version && format(' {0}', matrix.postgresql_version) || '' }} ${{ inputs.system == 'aarch64-darwin' && '🍎arm' || inputs.system == 'aarch64-linux' && '🐧arm' || '🐧x86' }}
+    # These packages need other packages from this run.
+    # Wait for the leaf builds to be cached, so we don't build them twice.
+    needs:
+      - eval
+      - leaf-builds
     runs-on: ${{ matrix.attr != '' && matrix.runs_on.group && matrix.runs_on || matrix.runs_on.labels }}
     strategy:
       fail-fast: false

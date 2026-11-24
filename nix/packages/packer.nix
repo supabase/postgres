@@ -10,6 +10,7 @@ let
 in
 buildGoModule rec {
   pname = "packer";
+  # renovate: datasource=github-tags depName=packer packageName=hashicorp/packer extractVersion=^v(?<version>.+)$
   version = "1.14.1";
 
   src = fetchFromGitHub {

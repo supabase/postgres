@@ -96,7 +96,7 @@ workflows:
         - 'aws-actions/amazon-ecr-login@v2.1.7'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
         - 'slackapi/slack-github-action@v4.0.0'
-    '.github/workflows/renovate-refresh-ansible-checksums.yml':
+    '.github/workflows/renovate-rehash.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/create-github-app-token@v3.3.0'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
