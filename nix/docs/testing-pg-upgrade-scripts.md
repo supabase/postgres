@@ -45,6 +45,7 @@ staging host with real systemd.
 
 4. **Test on Running Machine**
    ssh into the machine
+
    ```bash
    # Stop PostgreSQL
    sudo systemctl stop postgresql
@@ -52,9 +53,10 @@ staging host with real systemd.
    # Run the upgrade script in local mode with your desired flake version
    sudo NIX_FLAKE_VERSION="your-flake-version-here" IS_LOCAL_UPGRADE=true /etc/adminapi/pg_upgrade_scripts/initiate.sh 17
    ```
+
    Note: This will use the version of the script that exists at `/etc/adminapi/pg_upgrade_scripts/initiate.sh` on the server.
    The script should be run as the ubuntu user with sudo privileges. The script will handle switching to the postgres user when needed.
-   
+
    In local mode:
    - The script at `/etc/adminapi/pg_upgrade_scripts/initiate.sh` will be used (your edited version)
    - Only the PostgreSQL binaries will be downloaded from the specified flake version
@@ -63,6 +65,7 @@ staging host with real systemd.
    - If NIX_FLAKE_VERSION is not set, it will use the default flake version
 
 5. **Monitor Progress**
+
    ```bash
    # Watch the upgrade log
    tail -f /var/log/pg-upgrade-initiate.log
@@ -74,19 +77,20 @@ staging host with real systemd.
    - Run pg_upgrade to test the upgrade process
    - Generate SQL files in `/data_migration/sql/` for any needed post-upgrade steps
    - Log the results in `/var/log/pg-upgrade-initiate.log`
-   
+
    To verify success:
+
    ```bash
    # Check the upgrade log for completion
    grep "Upgrade complete" /var/log/pg-upgrade-initiate.log
-   
+
    # Check for any generated SQL files
    ls -l /data_migration/sql/
-   
+
    # Check the new data directory
    ls -l /data_migration/pgdata/
    ```
-   
+
    Note: The instance will not be upgraded to the new version in local mode. This is just a test run to verify the upgrade process works correctly.
 
 ## Important Notes
@@ -105,12 +109,14 @@ staging host with real systemd.
 ## Troubleshooting
 
 If the upgrade fails:
+
 1. Check the logs at `/var/log/pg-upgrade-initiate.log`
 2. Look for any error messages in the PostgreSQL logs
 3. The script will attempt to clean up and restore the original state
 4. If you see an error about missing Nix flake attributes, make sure the flake version includes the PostgreSQL version you're testing
 
 Common Errors:
+
 - `error: flake 'github:supabase/postgres/...' does not provide attribute 'packages.aarch64-linux.psql_17.bin'`
   - This means the Nix flake version doesn't include PostgreSQL 17 binaries
   - You need to specify a flake version that includes your target version
@@ -119,6 +125,7 @@ Common Errors:
 ## Cleanup
 
 After testing:
+
 1. The script will automatically clean up temporary files
 2. PostgreSQL will be restarted
 3. The original configuration will be restored
@@ -126,4 +133,4 @@ After testing:
 ## References
 
 - [publish-nix-pgupgrade-scripts.yml](https://github.com/supabase/postgres/actions/workflows/publish-nix-pgupgrade-scripts.yml)
-- [publish-nix-pgupgrade-bin-flake-version.yml](https://github.com/supabase/postgres/actions/workflows/publish-nix-pgupgrade-bin-flake-version.yml) 
+- [publish-nix-pgupgrade-bin-flake-version.yml](https://github.com/supabase/postgres/actions/workflows/publish-nix-pgupgrade-bin-flake-version.yml)

@@ -1,12 +1,12 @@
-name: Manual Docker Artifacts Release 
+name: Manual Docker Artifacts Release
 
 on:
   workflow_dispatch:
     inputs:
       postgresVersion:
-        description: 'Optional. Postgres version to publish against, i.e. 15.1.1.78'
+        description: "Optional. Postgres version to publish against, i.e. 15.1.1.78"
         required: false
- 
+
 permissions:
   id-token: write
   contents: read
@@ -75,7 +75,7 @@ jobs:
       - uses: $/.github/actions/install-nix
       - name: Set PostgreSQL version environment variable
         run: echo "POSTGRES_MAJOR_VERSION=${{ matrix.version }}" >> $GITHUB_ENV
-      
+
       - id: args
         run: |
           nix run --inputs-from . nixpkgs#nushell -- -c '
@@ -85,14 +85,14 @@ jobs:
             | each { |it| $"($it.name)=($it.item)" } 
             | str join "\n" 
             | save --append $env.GITHUB_OUTPUT
-          '    
+          '
   build_release_image:
     needs: [prepare, build]
     strategy:
       matrix:
         postgres: ${{ fromJson(needs.prepare.outputs.matrix_config).include }}
         arch: [amd64, arm64]
-    runs-on: ${{ matrix.arch == 'amd64' && 'blacksmith-8vcpu-ubuntu-2404' || 'large-linux-arm' }}
+    runs-on: ${{ matrix.arch == 'amd64' && 'blacksmith-8vcpu-ubuntu-2404' || 'blacksmith-8vcpu-ubuntu-2404-arm' }}
     timeout-minutes: 180
     steps:
       - name: Checkout Repo
@@ -228,12 +228,12 @@ jobs:
           nix run --inputs-from . nixpkgs#nushell -- -c '
             # Parse the matrix configuration directly
             let matrix_config = (${{ toJson(needs.prepare.outputs.matrix_config) }} | from json)
-      
+
             # Get versions directly from include array
             let versions = ($matrix_config.include | get version)
-      
+
             echo "Versions: $versions"
-      
+
             # Convert the versions to a comma-separated string
             let versions_str = ($versions | str join ",")
             $"versions=$versions_str" | save --append $env.GITHUB_ENV
@@ -276,14 +276,14 @@ jobs:
     outputs:
       matrix: ${{ steps.combine.outputs.matrix }}
   publish:
-      permissions:
-        contents: read
-        packages: write
-        id-token: write
-      needs: combine_results
-      strategy:
-        matrix: ${{ fromJson(needs.combine_results.outputs.matrix) }}
-      uses: $/.github/workflows/mirror.yml
-      with:
-        version: ${{ inputs.postgresVersion != '' && (contains(matrix.version, '-multigres') && format('{0}-multigres', inputs.postgresVersion) || inputs.postgresVersion) || matrix.version }}
-      secrets: inherit
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    needs: combine_results
+    strategy:
+      matrix: ${{ fromJson(needs.combine_results.outputs.matrix) }}
+    uses: $/.github/workflows/mirror.yml
+    with:
+      version: ${{ inputs.postgresVersion != '' && (contains(matrix.version, '-multigres') && format('{0}-multigres', inputs.postgresVersion) || inputs.postgresVersion) || matrix.version }}
+    secrets: inherit

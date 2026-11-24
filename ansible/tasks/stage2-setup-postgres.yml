@@ -6,31 +6,31 @@
       block:
         - name: Remove specified extensions from postgresql.conf if orioledb-17 or 17 build
           ansible.builtin.replace:
-            path: '/etc/postgresql/postgresql.conf'
+            path: "/etc/postgresql/postgresql.conf"
             regexp: '\ timescaledb,'
-            replace: ''
+            replace: ""
 
         - name: Remove specified extensions from supautils.conf if orioledb-17 or 17 build
           ansible.builtin.replace:
-            path: '/etc/postgresql-custom/supautils.conf'
+            path: "/etc/postgresql-custom/supautils.conf"
             regexp: "{{ regex_item }}"
           loop:
             - '\ timescaledb,'
             - '\ plv8,'
           loop_control:
-            loop_var: 'regex_item'
+            loop_var: "regex_item"
 
         - name: Remove db_user_namespace from postgresql.conf if orioledb-17 or 17 build
           ansible.builtin.replace:
-            path: '/etc/postgresql/postgresql.conf'
+            path: "/etc/postgresql/postgresql.conf"
             regexp: 'db_user_namespace\ =\ off'
             replace: '#db_user_namespace\ =\ off'
 
         - name: Enable summarize_wal in postgresql.conf if orioledb-17 or 17 build
           ansible.builtin.replace:
-            path: '/etc/postgresql/postgresql.conf'
-            regexp: '^#summarize_wal = off'
-            replace: 'summarize_wal = on'
+            path: "/etc/postgresql/postgresql.conf"
+            regexp: "^#summarize_wal = off"
+            replace: "summarize_wal = on"
 
     - name: Execute things when is_psql_oriole and stage2
       when: stage2 and is_psql_oriole
@@ -38,25 +38,25 @@
       block:
         - name: Append orioledb to shared_preload_libraries append within closing quote
           ansible.builtin.replace:
-            path: '/etc/postgresql/postgresql.conf'
+            path: "/etc/postgresql/postgresql.conf"
             regexp: "(shared_preload_libraries).*(\\'.*)\\'"
             replace: "\\1 = \\2, orioledb'"
 
         - name: Add default_table_access_method setting
           ansible.builtin.lineinfile:
             line: "default_table_access_method = 'orioledb'"
-            path: '/etc/postgresql/postgresql.conf'
-            state: 'present'
+            path: "/etc/postgresql/postgresql.conf"
+            state: "present"
 
         - name: Add ORIOLEDB_ENABLED environment variable
           ansible.builtin.lineinfile:
-            line: 'ORIOLEDB_ENABLED=true'
-            path: '/etc/environment'
+            line: "ORIOLEDB_ENABLED=true"
+            path: "/etc/environment"
 
         - name: Add ORIOLEDB_ENABLED environment variable to postgresql.env
           ansible.builtin.lineinfile:
-            line: 'ORIOLEDB_ENABLED=true'
-            path: '/etc/environment.d/postgresql.env'
+            line: "ORIOLEDB_ENABLED=true"
+            path: "/etc/environment.d/postgresql.env"
 
 - name: Execute things when stage2
   when: stage2
@@ -77,44 +77,44 @@
 
     - name: Set ownership and permissions for file and dirs
       ansible.builtin.file:
-        group: 'postgres'
+        group: "postgres"
         mode: "{{ file_item['mode'] | default('0755', true) }}"
         owner: "{{ file_item['owner'] | default('postgres', true) }}"
         path: "{{ file_item['path'] }}"
         state: "{{ file_item['state'] | default('directory', true) }}"
       loop:
-        - { mode: '0750', path: '/etc/ssl/private', owner: 'root' }
-        - { mode: '0644', path: '/etc/environment.d/postgresql.env' , state: 'file'}
-        - { path: '/usr/lib/postgresql/bin' }
-        - { path: '/usr/lib/postgresql/share/postgresql' }
-        - { path: '/usr/lib/postgresql/share/postgresql/contrib' }
-        - { path: '/usr/lib/postgresql/share/postgresql/timezonesets' }
-        - { path: '/usr/lib/postgresql/share/postgresql/tsearch_data' }
-        - { path: '/usr/lib/postgresql/share/postgresql/extension' }
+        - { mode: "0750", path: "/etc/ssl/private", owner: "root" }
+        - { mode: "0644", path: "/etc/environment.d/postgresql.env", state: "file" }
+        - { path: "/usr/lib/postgresql/bin" }
+        - { path: "/usr/lib/postgresql/share/postgresql" }
+        - { path: "/usr/lib/postgresql/share/postgresql/contrib" }
+        - { path: "/usr/lib/postgresql/share/postgresql/timezonesets" }
+        - { path: "/usr/lib/postgresql/share/postgresql/tsearch_data" }
+        - { path: "/usr/lib/postgresql/share/postgresql/extension" }
       loop_control:
-        loop_var: 'file_item'
+        loop_var: "file_item"
 
     - name: import pgsodium_getkey script
       ansible.builtin.template:
-        dest: '/usr/lib/postgresql/bin/pgsodium_getkey.sh'
-        group: 'postgres'
-        mode: '0700'
-        owner: 'postgres'
-        src: 'files/pgsodium_getkey_readonly.sh.j2'
+        dest: "/usr/lib/postgresql/bin/pgsodium_getkey.sh"
+        group: "postgres"
+        mode: "0700"
+        owner: "postgres"
+        src: "files/pgsodium_getkey_readonly.sh.j2"
 
     - name: Find all files in /var/lib/postgresql/.nix-profile/bin/
       ansible.builtin.find:
         depth: 1
-        file_type: 'file'
-        path: '/var/lib/postgresql/.nix-profile/bin/'
-      register: 'nix_files'
+        file_type: "file"
+        path: "/var/lib/postgresql/.nix-profile/bin/"
+      register: "nix_files"
 
     - name: Find all the symlinks in /var/lib/postgresql/.nix-profile/bin/
       ansible.builtin.find:
         depth: 1
-        file_type: 'link'
-        path: '/var/lib/postgresql/.nix-profile/bin/'
-      register: 'nix_links'
+        file_type: "link"
+        path: "/var/lib/postgresql/.nix-profile/bin/"
+      register: "nix_links"
 
     - name: setup gatekeeper
       block:
@@ -142,90 +142,90 @@
 
     - name: Create symlinks for Nix files into /usr/lib/postgresql/bin
       ansible.builtin.file:
-        group: 'postgres'
-        owner: 'postgres'
+        group: "postgres"
+        owner: "postgres"
         path: "/usr/lib/postgresql/bin/{{ file_item['path'] | basename }}"
         src: "{{ file_item['path'] }}"
-        state: 'link'
+        state: "link"
       loop: "{{ nix_files['files'] }}"
       loop_control:
-        loop_var: 'file_item'
+        loop_var: "file_item"
 
     - name: Create symlinks for Nix files into /usr/bin
       ansible.builtin.file:
-        group: 'root'
-        owner: 'root'
+        group: "root"
+        owner: "root"
         path: "/usr/bin/{{ file_item['path'] | basename }}"
         src: "{{ file_item['path'] }}"
-        state: 'link'
+        state: "link"
       loop: "{{ nix_files['files'] }}"
       loop_control:
-        loop_var: 'file_item'
+        loop_var: "file_item"
 
     - name: Create symlinks for Nix symlinks into /usr/lib/postgresql/bin
       ansible.builtin.file:
-        group: 'postgres'
-        owner: 'postgres'
+        group: "postgres"
+        owner: "postgres"
         path: "/usr/lib/postgresql/bin/{{ link_item['path'] | basename }}"
         src: "{{ link_item['path'] }}"
-        state: 'link'
+        state: "link"
       loop: "{{ nix_links['files'] }}"
       loop_control:
-        loop_var: 'link_item'
+        loop_var: "link_item"
 
     - name: Create symlinks for Nix files into /usr/bin
       ansible.builtin.file:
-        group: 'root'
-        owner: 'root'
+        group: "root"
+        owner: "root"
         path: "/usr/bin/{{ link_item['path'] | basename }}"
         src: "{{ link_item['path'] }}"
-        state: 'link'
+        state: "link"
       loop: "{{ nix_links['files'] }}"
       loop_control:
-        loop_var: 'link_item'
+        loop_var: "link_item"
 
     # this task should be redundant, no?
     - name: Force /usr/bin/pg_config to be a symlink
       ansible.builtin.file:
         force: true
-        path: '/usr/bin/pg_config'
-        src: '/var/lib/postgresql/.nix-profile/bin/pg_config'
-        state: 'link'
+        path: "/usr/bin/pg_config"
+        src: "/var/lib/postgresql/.nix-profile/bin/pg_config"
+        state: "link"
 
     - name: Nuke /usr/lib/postgresql/share so we can recreate it as a symlink
       ansible.builtin.file:
-        path: '/usr/lib/postgresql/share'
-        state: 'absent'
+        path: "/usr/lib/postgresql/share"
+        state: "absent"
 
     - name: Create symlinks for PG share links into /usr/lib/postgresql/share
       ansible.builtin.file:
-        group: 'postgres'
-        owner: 'postgres'
-        path: '/usr/lib/postgresql/share'
-        src: '/var/lib/postgresql/.nix-profile/share'
-        state: 'link'
+        group: "postgres"
+        owner: "postgres"
+        path: "/usr/lib/postgresql/share"
+        src: "/var/lib/postgresql/.nix-profile/share"
+        state: "link"
 
     - name: create destination directory
       ansible.builtin.file:
-        path: '/usr/lib/postgresql/share/postgresql/contrib/'
+        path: "/usr/lib/postgresql/share/postgresql/contrib/"
         recurse: true
-        state: 'directory'
+        state: "directory"
 
     # script is expected to be placed by finalization tasks for different target platforms
     - name: pgsodium - set pgsodium.getkey_script
       ansible.builtin.lineinfile:
         line: "pgsodium.getkey_script= '{{ pg_bindir }}/pgsodium_getkey.sh'"
-        path: '/etc/postgresql/postgresql.conf'
-        state: 'present'
+        path: "/etc/postgresql/postgresql.conf"
+        state: "present"
 
     - name: Create symbolic link for pgsodium_getkey script
       ansible.builtin.file:
-        dest: '/usr/lib/postgresql/share/postgresql/extension/pgsodium_getkey'
-        src: '/usr/lib/postgresql/bin/pgsodium_getkey.sh'
-        state: 'link'
+        dest: "/usr/lib/postgresql/share/postgresql/extension/pgsodium_getkey"
+        src: "/usr/lib/postgresql/bin/pgsodium_getkey.sh"
+        state: "link"
 
 - name: Append GRN_PLUGINS_DIR to /etc/environment.d/postgresql.env
   ansible.builtin.lineinfile:
-    line: 'GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins'
-    path: '/etc/environment.d/postgresql.env'
+    line: "GRN_PLUGINS_DIR=/var/lib/postgresql/.nix-profile/lib/groonga/plugins"
+    path: "/etc/environment.d/postgresql.env"
   become: true

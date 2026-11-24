@@ -67,8 +67,28 @@ class NixEvalError(TypedDict):
     error: str
 
 
+def build_select_expr(flake_outputs: List[str], system: Optional[System]) -> str:
+    """Build the --select expression that picks which flake outputs to evaluate.
+
+    With a system, only that system's part of each output is evaluated.
+    Attribute names stay the same either way, for example checks.x86_64-linux.foo.
+    """
+
+    if system is None:
+        attrs = f"inherit (outputs) {' '.join(flake_outputs)};"
+    else:
+        attrs = " ".join(
+            f"{output}.{system} = outputs.{output}.{system};"
+            for output in flake_outputs
+        )
+    return f"outputs: {{ {attrs} }}"
+
+
 def build_nix_eval_command(
-    max_workers: int, max_memory_size: int, flake_outputs: List[str]
+    max_workers: int,
+    max_memory_size: int,
+    flake_outputs: List[str],
+    system: Optional[System] = None,
 ) -> List[str]:
     """Build the nix-eval-jobs command with appropriate flags."""
     nix_eval_cmd = [
@@ -89,9 +109,38 @@ def build_nix_eval_command(
         "--workers",
         str(max_workers),
         "--select",
-        f"outputs: {{ inherit (outputs) {' '.join(flake_outputs)}; }}",
+        build_select_expr(flake_outputs, system),
     ]
     return nix_eval_cmd
+
+
+def select_system_matrices(
+    packages_output: Dict[str, Dict[str, List[GitHubActionPackage]]],
+    checks_output: Dict[str, Dict[str, List[GitHubActionPackage]]],
+    system: System,
+) -> Tuple[
+    Dict[str, List[GitHubActionPackage]],
+    Dict[str, List[GitHubActionPackage]],
+    List[str],
+]:
+    """Pick one system's packages and checks matrices from the per-system outputs.
+
+    Also returns the other systems that have real jobs.
+    Jobs are grouped by their derivation's system, so an attribute under one system can hold a derivation for another.
+    Those jobs are not in the returned matrices, and no other system's eval sees them, so the caller should fail.
+    """
+    key = system.replace("-", "_")
+    others: List[str] = sorted(
+        {
+            job["system"]
+            for output in (packages_output, checks_output)
+            for other, matrix in output.items()
+            if other != key
+            for job in matrix["include"]
+            if job["attr"] != ""
+        }
+    )
+    return packages_output[key], checks_output[key], others
 
 
 def parse_nix_eval_line(
@@ -220,6 +269,17 @@ def sort_pkgs_by_closures(jobs: List[NixEvalJobsOutput]) -> List[NixEvalJobsOutp
     return sorted_jobs
 
 
+def waits_for_other_jobs(pkg: NixEvalJobsOutput, job_drvs: Set[str]) -> bool:
+    """Check if building this package needs the output of another job in the same matrix.
+
+    Matrix jobs all start together, so such a package would rebuild its dependencies itself.
+    It is better to run it in a later stage, after those dependencies are built and cached.
+    Dependencies that are already cached are not in neededBuilds, so they don't count.
+    """
+    needed = set(pkg.get("neededBuilds", []))
+    return bool(needed & job_drvs - {pkg["drvPath"]})
+
+
 def is_large_pkg(pkg: NixEvalJobsOutput) -> bool:
     """Determine if a package is considered large based on its attribute path."""
     return "big-parallel" in pkg.get("requiredSystemFeatures", [])
@@ -234,44 +294,25 @@ def get_runner_for_package(pkg: NixEvalJobsOutput) -> RunsOnConfig | None:
     """Determine the appropriate GitHub Actions runner for a package.
 
     Priority order:
-    1. VM packages on Linux  → 16vcpu blacksmith runners
-    2. Large packages on D/L → 12/32vcpu blacksmith runners
-    3. Default Darwin/Linux  → 6/8vcpu blacksmith runners
+    1. Large packages on D/L → 12/32vcpu blacksmith runners
+    2. Default Darwin/Linux  → 6/8vcpu blacksmith runners
     """
 
     system = pkg["system"]
     arch, os = system.split("-")
 
-    class Specs(NamedTuple):
-        vcpu: int = 0
-        osv: str = None
+    # defaults
+    if os == "linux":
+        vcpu = 8
+        osv = f"ubuntu-2404{'-arm' if arch == 'aarch64' else ''}"
+    else:
+        vcpu = 6
+        osv = "macos-26"
 
-    specs = Specs()
+    if is_large_pkg(pkg):
+        vcpu = 32 if os == "linux" else 12
 
-    match (is_virt_pkg(pkg), is_large_pkg(pkg), os, arch):
-        # kvm
-        case (True, _, "linux", "aarch64"):
-            return {"labels": ["arm-native-runner"]}
-        case (True, _, "linux", "x86_64"):
-            specs = Specs(16, "ubuntu-2404")
-
-        # large
-        case (_, True, "darwin", "aarch64"):
-            specs = Specs(12, "macos-26")
-        case (_, True, "linux", "aarch64"):
-            specs = Specs(32, "ubuntu-2404-arm")
-        case (_, True, "linux", "x86_64"):
-            specs = Specs(32, "ubuntu-2404")
-
-        # default
-        case (_, _, "darwin", "aarch64"):
-            specs = Specs(6, "macos-26")
-        case (_, _, "linux", "aarch64"):
-            specs = Specs(8, "ubuntu-2404-arm")
-        case (_, _, "linux", "x86_64"):
-            specs = Specs(8, "ubuntu-2404")
-
-    return {"labels": [f"blacksmith-{specs.vcpu}vcpu-{specs.osv}"]}
+    return {"labels": [f"blacksmith-{vcpu}vcpu-{osv}"]}
 
 
 def main() -> None:
@@ -302,6 +343,11 @@ def main() -> None:
         help="Store eval json output to file and exit",
     )
     parser.add_argument(
+        "--system",
+        choices=get_args(System),
+        help="Evaluate only this system, and output that system's matrices directly instead of a map of all systems",
+    )
+    parser.add_argument(
         "flake_outputs", nargs="+", help="Nix flake outputs to evaluate"
     )
 
@@ -314,6 +360,7 @@ def main() -> None:
             args.nb_eval_jobs_workers,
             args.max_memory_size,
             args.flake_outputs,
+            args.system,
         )
         nix_eval_output, warnings_list = run_nix_eval_jobs(cmd)
         if warnings_list:
@@ -351,19 +398,34 @@ def main() -> None:
         return returned_pkg
 
     # Group packages by system and type (checks vs packages)
+    leaf_packages_by_system: Dict[System, List[GitHubActionPackage]] = defaultdict(list)
     packages_by_system: Dict[System, List[GitHubActionPackage]] = defaultdict(list)
     checks_by_system: Dict[System, List[GitHubActionPackage]] = defaultdict(list)
+    package_drvs = {
+        pkg["drvPath"]
+        for pkg in gh_action_packages
+        if pkg.get("cacheStatus") == "notBuilt"
+        and pkg["attr"].startswith("legacyPackages.")
+    }
     for pkg in gh_action_packages:
         if pkg.get("cacheStatus") == "notBuilt":
             cleaned_pkg = clean_package_for_output(pkg)
             if pkg["attr"].startswith("checks."):
                 checks_by_system[pkg["system"]].append(cleaned_pkg)
             elif pkg["attr"].startswith("legacyPackages."):
-                packages_by_system[pkg["system"]].append(cleaned_pkg)
+                # Leaf packages build first. The rest wait for them, so they can reuse their output.
+                if waits_for_other_jobs(pkg, package_drvs):
+                    packages_by_system[pkg["system"]].append(cleaned_pkg)
+                else:
+                    leaf_packages_by_system[pkg["system"]].append(cleaned_pkg)
 
     packages_output: Dict[str, Dict[str, List[GitHubActionPackage]]] = {}
     for pkg_system, pkg_list in packages_by_system.items():
         packages_output[pkg_system.replace("-", "_")] = {"include": pkg_list}
+
+    leaf_packages_output: Dict[str, Dict[str, List[GitHubActionPackage]]] = {}
+    for pkg_system, pkg_list in leaf_packages_by_system.items():
+        leaf_packages_output[pkg_system.replace("-", "_")] = {"include": pkg_list}
 
     checks_output: Dict[str, Dict[str, List[GitHubActionPackage]]] = {}
     for check_system, check_list in checks_by_system.items():
@@ -378,7 +440,18 @@ def main() -> None:
                         "attr": "",
                         "name": "no checks to build",
                         "system": system,
-                        "runs_on": {"labels": ["ubuntu-latest"]},
+                        "runs_on": {"labels": ["ubuntu-slim"]},
+                    }
+                ]
+            }
+        if s not in leaf_packages_output:
+            leaf_packages_output[s] = {
+                "include": [
+                    {
+                        "attr": "",
+                        "name": "no leaf packages to build",
+                        "system": system,
+                        "runs_on": {"labels": ["ubuntu-slim"]},
                     }
                 ]
             }
@@ -389,12 +462,13 @@ def main() -> None:
                         "attr": "",
                         "name": "no packages to build",
                         "system": system,
-                        "runs_on": {"labels": ["ubuntu-latest"]},
+                        "runs_on": {"labels": ["ubuntu-slim"]},
                     }
                 ]
             }
 
     gh_output = {
+        "leaf_packages": leaf_packages_output,
         "packages": packages_output,
         "checks": checks_output,
     }
@@ -416,11 +490,32 @@ def main() -> None:
 
     if errors_list:
         sys.exit(1)
-    else:
-        set_output("packages_matrix", json.dumps(gh_output["packages"]))
-        set_output("checks_matrix", json.dumps(gh_output["checks"]))
-        print("Generated GitHub Actions matrix:")
-        json.dumps(gh_output, indent=2)
+    elif args.system:
+        packages, checks, others = select_system_matrices(
+            packages_output,
+            checks_output,
+            args.system,
+        )
+        if others:
+            # These jobs would never be built: they are not in this matrix, and other systems don't evaluate them.
+            others = ", ".join(others)
+            error(
+                f"Evaluated {args.system} but found jobs whose derivations are for {others}. "
+                "No eval builds them, so move them under their own system's outputs.",
+                title="Jobs for another system",
+            )
+            sys.exit(1)
+        gh_output = {
+            "leaf_packages": leaf_packages_output[args.system.replace("-", "_")],
+            "packages": packages,
+            "checks": checks,
+        }
+
+    set_output("leaf_packages_matrix", json.dumps(gh_output["leaf_packages"]))
+    set_output("packages_matrix", json.dumps(gh_output["packages"]))
+    set_output("checks_matrix", json.dumps(gh_output["checks"]))
+    print("Generated GitHub Actions matrix:")
+    json.dumps(gh_output, indent=2)
 
 
 if __name__ == "__main__":

@@ -4,6 +4,7 @@ Running NixOS tests on macOS requires a Linux builder VM because NixOS tests nee
 This project includes a nix-darwin configuration that sets up a linux-builder VM automatically.
 
 You need:
+
 - macOS with Apple Silicon (aarch64-darwin)
 - Nix installed (see [Getting Started](start-here.md)) preferably a recent version (2.30+)
 
@@ -19,11 +20,13 @@ The builder VM is a Linux system, and building it needs a Linux builder.
 If none is configured, the script first bootstraps with the official `nixos-26.05#darwin.linux-builder`, builds the configuration through it, and stops it before switching.
 
 The script will:
+
 - Back up existing system files (`/etc/nix/nix.conf`, `/etc/bashrc`, `/etc/zshrc`)
 - Configure nix-darwin with the linux-builder VM
 - Install helper scripts for managing the builder
 
 The linux-builder VM is configured with:
+
 - 8 CPU cores
 - 24GB RAM
 - 100GB disk

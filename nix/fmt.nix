@@ -22,7 +22,14 @@
                 !(config.treefmt.programs ? oxfmt)
               ) "treefmt-nix now has an oxfmt module; replace this formatter with programs.oxfmt";
               "${pkgs.oxfmt}/bin/oxfmt";
-            includes = [ "renovate.json5" ];
+            includes = [
+              "*.json"
+              "*.json5"
+              "*.md"
+              "*.toml"
+              "*.yaml"
+              "*.yml"
+            ];
           };
         };
       };

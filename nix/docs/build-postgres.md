@@ -56,7 +56,6 @@ $ readlink result
 /nix/store/<hash>-postgresql-and-plugins-17.11
 ```
 
-
 ## Using `nix develop`
 
 [`nix develop .`](https://nix.dev/manual/nix/stable/command-ref/new-cli/nix3-develop.html) drops you in a subshell with the tools you need.

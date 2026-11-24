@@ -1,20 +1,20 @@
 # Default rules for PostgreSQL container startup profiling
 patterns:
   - name: "initdb_start"
-    regex: 'running bootstrap script'
+    regex: "running bootstrap script"
 
   - name: "initdb_complete"
-    regex: 'syncing data to disk'
+    regex: "syncing data to disk"
 
   - name: "temp_server_start"
-    regex: 'database system is ready to accept connections'
+    regex: "database system is ready to accept connections"
     occurrence: 1
 
   - name: "server_shutdown"
-    regex: 'database system is shut down'
+    regex: "database system is shut down"
 
   - name: "final_server_ready"
-    regex: 'database system is ready to accept connections'
+    regex: "database system is ready to accept connections"
     occurrence: 2
     marks_ready: true
 
@@ -23,7 +23,7 @@ patterns:
     capture: extension
 
   - name: "bgworker_start"
-    regex: '(?P<worker>pg_cron|pg_net).*started'
+    regex: "(?P<worker>pg_cron|pg_net).*started"
     capture: worker
 
   - name: "migration_file"
