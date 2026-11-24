@@ -153,15 +153,17 @@ cleanup() {
 	if [ -d "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" ]; then
 		log "Copying pg_upgrade output to /var/log"
 		cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/ || true
-		chown -R postgres:postgres /var/log/pg_upgrade_output.d/
-		chmod -R 0750 /var/log/pg_upgrade_output.d/
-		for file in /var/log/pg_upgrade_output.d/*/*; do
+		chown -R postgres:postgres /var/log/pg_upgrade_output.d/ || true
+		chmod -R 0750 /var/log/pg_upgrade_output.d/ || true
+		# Layout: pg_upgrade_output.d/<timestamp>/{log,dump}/<files>. Only log/ is
+		# appended (dump/ holds the schema dumps: large and not useful in the log).
+		for file in /var/log/pg_upgrade_output.d/*/log/*; do
 			if [ -f "$file" ]; then
 				if [ -s "$file" ]; then
-					log "pg_upgrade_output file: $file (empty)"
-				else
 					log "pg_upgrade_output file: $file:"
 					cat "$file" >>"$LOG_FILE" 2>/dev/null || true
+				else
+					log "pg_upgrade_output file: $file (empty)"
 				fi
 			fi
 		done
@@ -616,6 +618,13 @@ EXTRA_NIX_CONF
 			mv "$MOUNT_POINT/upgrade-reporting-credentials.target" /root/upgrade-reporting-credentials
 			chown root:root /root/upgrade-reporting-credentials
 			chmod 600 /root/upgrade-reporting-credentials
+
+			# reload the ANON key since it is loaded when common.sh is included
+			# at the start of this script
+
+			# shellcheck disable=SC2034
+			REPORTING_ANON_KEY=$(cat /root/upgrade-reporting-credentials)
+
 		else
 			rm $MOUNT_POINT/upgrade-reporting-credentials.target
 		fi
