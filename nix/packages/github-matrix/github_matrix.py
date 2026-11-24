@@ -294,7 +294,7 @@ def get_runner_for_package(pkg: NixEvalJobsOutput) -> RunsOnConfig | None:
     """Determine the appropriate GitHub Actions runner for a package.
 
     Priority order:
-    1. VM packages on Linux  → 16vcpu blacksmith runners (aarch64 uses software emulation)
+    1. VM packages on Linux  → 8vcpu blacksmith runners (aarch64 uses software emulation)
     2. Large packages on D/L → 12/32vcpu blacksmith runners
     3. Default Darwin/Linux  → 6/8vcpu blacksmith runners
     """
@@ -311,9 +311,9 @@ def get_runner_for_package(pkg: NixEvalJobsOutput) -> RunsOnConfig | None:
     match (is_virt_pkg(pkg), is_large_pkg(pkg), os, arch):
         # kvm
         case (True, _, "linux", "aarch64"):
-            specs = Specs(16, "ubuntu-2404-arm")
+            specs = Specs(8, "ubuntu-2404-arm")
         case (True, _, "linux", "x86_64"):
-            specs = Specs(16, "ubuntu-2404")
+            specs = Specs(8, "ubuntu-2404")
 
         # large
         case (_, True, "darwin", "aarch64"):

@@ -111,7 +111,7 @@ class TestGetRunnerForPackage:
             (
                 "aarch64-linux",
                 "kvm",
-                {"labels": ["blacksmith-16vcpu-ubuntu-2404-arm"]},
+                {"labels": ["blacksmith-8vcpu-ubuntu-2404-arm"]},
             ),
             (
                 "aarch64-linux",
@@ -126,7 +126,7 @@ class TestGetRunnerForPackage:
             (
                 "x86_64-linux",
                 "kvm",
-                {"labels": ["blacksmith-16vcpu-ubuntu-2404"]},
+                {"labels": ["blacksmith-8vcpu-ubuntu-2404"]},
             ),
             (
                 "x86_64-linux",
