@@ -8,6 +8,7 @@
 stdenv.mkDerivation rec {
   pname = "supautils";
   name = pname;
+  # renovate: datasource=github-tags depName=supautils packageName=supabase/supautils extractVersion=^v(?<version>.+)$
   version = "4.0.1";
 
   buildInputs = [ postgresql ];
