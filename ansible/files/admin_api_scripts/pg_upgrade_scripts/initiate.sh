@@ -152,18 +152,74 @@ cleanup() {
 
 	if [ -d "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" ]; then
 		log "Copying pg_upgrade output to /var/log"
+
+		# Previous (failed) attempts may have left their timestamped directories in
+		# /var/log: archive them in pg_upgrade_output.d.previous/<timestamp>/ (never
+		# deleted) so that only this attempt's output is read below.
+		PG_UPGRADE_OUTPUT_DIR="/var/log/pg_upgrade_output.d"
+		PG_UPGRADE_PREVIOUS_DIR="${PG_UPGRADE_OUTPUT_DIR}.previous"
+		LAST_ARCHIVED_DIR=""
+
+		if [ -d "$PG_UPGRADE_OUTPUT_DIR" ]; then
+			mkdir -p "$PG_UPGRADE_PREVIOUS_DIR" || true
+
+			# The glob is sorted and the names are timestamps: the last directory
+			# archived is the most recent previous attempt.
+			for dir in "$PG_UPGRADE_OUTPUT_DIR"/*/; do
+				if [ -d "$dir" ]; then
+					dir="${dir%/}"
+					dest="$PG_UPGRADE_PREVIOUS_DIR/${dir##*/}"
+					# never nest into / overwrite an already archived directory
+					if [ -e "$dest" ]; then
+						dest="${dest}.$(date +%s)"
+					fi
+					if mv "$dir" "$dest"; then
+						LAST_ARCHIVED_DIR="$dest"
+					else
+						log "WARNING: failed to archive $dir to $dest"
+					fi
+				fi
+			done
+
+			# *.txt files at the root of pg_upgrade_output.d come from a previous
+			# attempt: attach them to the most recent archived timestamp directory
+			# (or to the root of the archive if there is none).
+			for file in "$PG_UPGRADE_OUTPUT_DIR"/*.txt; do
+				if [ -f "$file" ]; then
+					mv "$file" "${LAST_ARCHIVED_DIR:-$PG_UPGRADE_PREVIOUS_DIR}/" || log "WARNING: failed to archive $file"
+				fi
+			done
+		fi
+
 		cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/ || true
 		chown -R postgres:postgres /var/log/pg_upgrade_output.d/ || true
 		chmod -R 0750 /var/log/pg_upgrade_output.d/ || true
+
 		# Layout: pg_upgrade_output.d/<timestamp>/{log,dump}/<files>. Only log/ is
 		# appended (dump/ holds the schema dumps: large and not useful in the log).
+
 		for file in /var/log/pg_upgrade_output.d/*/log/*; do
 			if [ -f "$file" ]; then
 				if [ -s "$file" ]; then
-					log "pg_upgrade_output file: $file:"
+					log "pg_upgrade_output log file: $file:"
 					cat "$file" >>"$LOG_FILE" 2>/dev/null || true
 				else
-					log "pg_upgrade_output file: $file (empty)"
+					log "pg_upgrade_output log file: $file (empty)"
+				fi
+			fi
+		done
+
+		# Layout: pg_upgrade_output.d/<timestamp>/*txt. Special checks during
+		# pg_upgrade will create special TXT files at the root of this directory
+		# adding them since this is useful for debugging too
+
+		for file in /var/log/pg_upgrade_output.d/*/*.txt; do
+			if [ -f "$file" ]; then
+				if [ -s "$file" ]; then
+					log "pg_upgrade_output report filename : $file:"
+					cat "$file" >>"$LOG_FILE" 2>/dev/null || true
+				else
+					log "pg_upgrade_output report filename : $file (empty)"
 				fi
 			fi
 		done
