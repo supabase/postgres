@@ -19,6 +19,10 @@ inputs:
     description: Install Nix in single-user mode, without the Nix daemon, even when systemd is running. Eval-heavy jobs run faster this way.
     required: false
     default: false
+  sticky-disk:
+    description: Blacksmith sticky disk holding a Nix store to substitute from, Linux only. One of none, read, or write. read discards changes at job end, write commits them when the job succeeds.
+    required: false
+    default: none
 runs:
   using: composite
   steps:
@@ -49,6 +53,15 @@ runs:
         output-env-credentials: false
         role-duration-seconds: 7200
 
+    - name: mount nix store disk
+      if: inputs.sticky-disk != 'none' && runner.os == 'Linux'
+      continue-on-error: ${{ inputs.sticky-disk == 'read' }}
+      uses: useblacksmith/stickydisk@v1.8.0
+      with:
+        key: nix-store-${{ runner.arch }}
+        path: /mnt/nix-store-disk
+        commit: ${{ inputs.sticky-disk == 'write' }}
+
     - name: setup nix
       shell: bash
       run: cd ${{ github.action_path }} && ./setup-nix.sh
@@ -61,6 +74,7 @@ runs:
         NIX_SIGN_SECRET_KEY: ${{ inputs.nix-signing-key }}
         PUSH_TO_CACHE: ${{ steps.resolve-push-to-cache.outputs.value }}
         SINGLE_USER: ${{ inputs.single-user }}
+        STICKY_DISK: ${{ inputs.sticky-disk }}
 
     - name: verify nix in path
       shell: bash

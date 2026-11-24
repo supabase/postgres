@@ -118,6 +118,7 @@ jobs:
           push-to-cache: true
           nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          sticky-disk: read
       - name: nix build
         if: ${{ matrix.attr != '' }}
         uses: $/.github/actions/nix-build-retry
@@ -147,6 +148,7 @@ jobs:
           push-to-cache: true
           nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          sticky-disk: read
       - name: nix build
         if: ${{ matrix.attr != '' }}
         uses: $/.github/actions/nix-build-retry
@@ -174,6 +176,7 @@ jobs:
           push-to-cache: true
           nix-signing-key: ${{ secrets.NIX_SIGN_SECRET_KEY }}
           role-to-assume: ${{ secrets.DEV_AWS_ROLE }}
+          sticky-disk: read
       - name: nix build
         if: ${{ matrix.attr != '' }}
         uses: $/.github/actions/nix-build-retry
