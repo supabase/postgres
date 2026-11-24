@@ -39,8 +39,15 @@ on_exit() {
 	local rc=$?
 	trap - EXIT ERR
 
-	[ "$rc" -eq 0 ] && log "prepare.sh ended with no errors"
-	ship_logs "$LOG_FILE" || log "Log upload failed (non-blocking)."
+	# ship the log
+
+	if [ "$rc" -eq 0 ]; then
+		ship_logs "$LOG_FILE" || log "Log upload failed (non-blocking)."
+		log "prepare.sh ended with no errors"
+	else
+		log "prepare.sh ended with errors"
+		ship_logs "$LOG_FILE" || log "Log upload failed (non-blocking)."
+	fi
 	exit "$rc"
 }
 trap on_exit EXIT
@@ -70,12 +77,22 @@ if pgrep -x postgres >/dev/null; then
 fi
 
 # copy the pgsodium root key with proper owner and permissions
-install -m 600 -o postgres -g postgres \
-	/etc/postgresql-custom/pgsodium_root.key /data/pgsodium_root.key
+# (optional: initiate.sh also treats it as optional)
+if [ -f /etc/postgresql-custom/pgsodium_root.key ]; then
+	install -m 600 -o postgres -g postgres \
+		/etc/postgresql-custom/pgsodium_root.key /data/pgsodium_root.key
+else
+	log "WARNING: /etc/postgresql-custom/pgsodium_root.key not found; not copying it"
+fi
 
 # copy the anon key used to ship logs to the error_logs project
-install -m 600 -o root -g root \
-	/root/upgrade-reporting-credentials /data/upgrade-reporting-credentials.target
+# (optional: without it logs are simply not shipped, which must not block the upgrade)
+if [ -f /root/upgrade-reporting-credentials ]; then
+	install -m 600 -o root -g root \
+		/root/upgrade-reporting-credentials /data/upgrade-reporting-credentials.target
+else
+	log "WARNING: /root/upgrade-reporting-credentials not found; not copying it (logs will not be shipped)"
+fi
 
 # flush cached writes to persistent storage
 sync
@@ -87,7 +104,20 @@ if ! umount_out=$(umount /data 2>&1); then
 	# List the processes whose cwd is under /data.
 	log "Processes using /data:"
 
-	# activate nullglob to avoid errors if /proc is not accessible
+	# Processes with open files (or any other use) on /data, not only those whose
+	# cwd is there. Best effort: the tools may be absent, never fail because of it.
+	if command -v fuser >/dev/null 2>&1; then
+		log "fuser -vm /data:"
+		fuser -vm /data 2>&1 || true
+	elif command -v lsof >/dev/null 2>&1; then
+		log "lsof +f -- /data:"
+		lsof +f -- /data 2>&1 || true
+	else
+		log "neither fuser nor lsof available; listing cwd only"
+	fi
+
+	# nullglob: with no match, the /proc/[0-9]*/cwd pattern expands to nothing
+	# instead of being passed literally to stat
 	shopt -s nullglob
 
 	QUOTING_STYLE=literal stat -c '%U %N' /proc/[0-9]*/cwd 2>/dev/null |

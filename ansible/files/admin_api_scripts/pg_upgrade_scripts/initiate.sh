@@ -156,9 +156,13 @@ cleanup() {
 		chown -R postgres:postgres /var/log/pg_upgrade_output.d/
 		chmod -R 0750 /var/log/pg_upgrade_output.d/
 		for file in /var/log/pg_upgrade_output.d/*/*; do
-			log "pg_upgrade_output file: $file"
 			if [ -f "$file" ]; then
-				cat "$file" >>"$LOG_FILE" 2>/dev/null || true
+				if [ -s "$file" ]; then
+					log "pg_upgrade_output file: $file (empty)"
+				else
+					log "pg_upgrade_output file: $file:"
+					cat "$file" >>"$LOG_FILE" 2>/dev/null || true
+				fi
 			fi
 		done
 
@@ -212,9 +216,6 @@ EOF
 		retry 3 umount $MOUNT_POINT || true
 	fi
 	echo "$UPGRADE_STATUS" >/tmp/pg-upgrade-status
-
-	# ship $LOG_FILE content to reporting project (see common.sh)
-	ship_logs "$LOG_FILE" || true
 
 	if [ -z "$IS_CI" ]; then
 		exit "$EXIT_CODE"
