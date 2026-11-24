@@ -101,3 +101,14 @@ func TestResultCounts(t *testing.T) {
 		t.Errorf("Expected 1 failed critical, got %d", len(result.FailedCritical))
 	}
 }
+
+func TestRunDiscoverySkippedWithoutPolicy(t *testing.T) {
+	v := New(Options{BaselinesDir: t.TempDir()})
+	r := v.runDiscovery()
+	if !r.Skipped {
+		t.Error("expected discovery to be skipped when the policy file is missing")
+	}
+	if r.Spec != "file-discovery" || r.Category != "critical" {
+		t.Errorf("unexpected result: %+v", r)
+	}
+}

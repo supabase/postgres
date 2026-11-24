@@ -7,6 +7,7 @@ A comprehensive system auditing toolkit for generating and validating baseline s
 **One Unified CLI with Three Commands:**
 - **`supascan genspec`** - Generate complete machine baseline (packages, services, configs, users, groups, mounts, kernel params)
 - **`supascan validate`** - Validate machines against baseline specifications with critical/advisory categorization
+- **`supascan discover`** - Scan the filesystem for setuid files, world or group-writable paths, orphaned owner ids, and modes outside an allowlist
 - **`supascan split`** - Split a monolithic baseline into separate section files for easier auditing
 
 **Use Cases:**
@@ -48,6 +49,17 @@ sudo nix run .#supascan -- validate --verbose /path/to/baselines
 
 # Using documentation format for readable output
 sudo nix run .#supascan -- validate --format documentation /path/to/baselines
+```
+
+### Filesystem discovery
+
+`validate` also runs `discover` when the baselines directory has a `file-discovery.yml`. goss only checks listed paths, so discovery walks the filesystem and reports setuid or setgid files outside `setuid`, world-writable paths other than sticky directories, group-writable paths, owner or group ids with no passwd or group entry, and modes outside `file_modes` and `dir_modes` under `roots`. Paths in `exceptions` are skipped. An entry ending in `/**` covers the whole subtree.
+
+```bash
+sudo supascan discover audit-specs/baselines/ami-build-amd64/file-discovery.yml
+
+# Scan an extracted image
+sudo supascan discover --root /mnt/image policy.yml
 ```
 
 ## Installation

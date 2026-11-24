@@ -22,6 +22,7 @@ Commands:
   genspec   Generate a baseline specification from the current system
   validate  Validate the system against baseline specifications
   split     Split a baseline file into separate section files
+  discover  Scan the filesystem for permission and ownership drift
 
 Examples:
   # Generate a baseline spec

@@ -9,6 +9,9 @@ import (
 	"strings"
 )
 
+// DiscoveryPolicy is the filesystem discovery policy in a baselines directory.
+const DiscoveryPolicy = "file-discovery.yml"
+
 // Spec categories
 var (
 	CriticalSpecs = []string{
@@ -108,6 +111,18 @@ func (v *Validator) Run() (*Result, error) {
 			result.CriticalFailed++
 			result.FailedCritical = append(result.FailedCritical, specResult.Spec)
 		}
+	}
+
+	discoveryResult := v.runDiscovery()
+	result.Specs = append(result.Specs, discoveryResult)
+	v.printSpecResult(discoveryResult)
+	if discoveryResult.Skipped {
+		result.CriticalSkipped++
+	} else if discoveryResult.Passed {
+		result.CriticalPassed++
+	} else {
+		result.CriticalFailed++
+		result.FailedCritical = append(result.FailedCritical, discoveryResult.Spec)
 	}
 
 	fmt.Println()
@@ -241,6 +256,34 @@ func (v *Validator) runSpec(specFile, category, gossPath string) SpecResult {
 		result.Passed = true
 	}
 
+	return result
+}
+
+// runDiscovery re-executes supascan under sudo so the walk can read every
+// directory, the same way goss specs run.
+func (v *Validator) runDiscovery() SpecResult {
+	result := SpecResult{Spec: "file-discovery", Category: "critical"}
+
+	policyPath := filepath.Join(v.opts.BaselinesDir, DiscoveryPolicy)
+	if _, err := os.Stat(policyPath); os.IsNotExist(err) {
+		result.Skipped = true
+		return result
+	}
+
+	self, err := os.Executable()
+	if err != nil {
+		result.Error = err
+		return result
+	}
+
+	cmd := exec.Command("sudo", self, "discover", policyPath)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err = cmd.Run()
+	result.Output = stdout.String() + stderr.String()
+	result.Error = err
+	result.Passed = err == nil
 	return result
 }
 
