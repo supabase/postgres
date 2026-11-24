@@ -254,7 +254,7 @@ RUN sed -i /etc/postgresql/postgresql.conf \
         -e "$ a default_table_access_method = 'orioledb'"
 
 # Register orioledb before initdb migrations run
-RUN echo "CREATE EXTENSION orioledb;" > /docker-entrypoint-initdb.d/init-scripts/00-pre-init.sql && \
+RUN printf 'SET ROLE supabase_admin;\nCREATE EXTENSION orioledb;\n' >/docker-entrypoint-initdb.d/init-scripts/00-pre-init.sql && \
     chown postgres:postgres /docker-entrypoint-initdb.d/init-scripts/00-pre-init.sql
 
 # pgctld calls initdb without locale flags, so it picks up LANG from the environment.
