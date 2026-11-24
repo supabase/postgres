@@ -294,44 +294,25 @@ def get_runner_for_package(pkg: NixEvalJobsOutput) -> RunsOnConfig | None:
     """Determine the appropriate GitHub Actions runner for a package.
 
     Priority order:
-    1. VM packages on Linux  → 8vcpu blacksmith runners (aarch64 uses software emulation)
-    2. Large packages on D/L → 12/32vcpu blacksmith runners
-    3. Default Darwin/Linux  → 6/8vcpu blacksmith runners
+    1. Large packages on D/L → 12/32vcpu blacksmith runners
+    2. Default Darwin/Linux  → 6/8vcpu blacksmith runners
     """
 
     system = pkg["system"]
     arch, os = system.split("-")
 
-    class Specs(NamedTuple):
-        vcpu: int = 0
-        osv: str = None
+    # defaults
+    if os == "linux":
+        vcpu = 8
+        osv = f"ubuntu-2404{'-arm' if arch == 'aarch64' else ''}"
+    else:
+        vcpu = 6
+        osv = "macos-26"
 
-    specs = Specs()
+    if is_large_pkg(pkg):
+        vcpu = 32 if os == "linux" else 12
 
-    match (is_virt_pkg(pkg), is_large_pkg(pkg), os, arch):
-        # kvm
-        case (True, _, "linux", "aarch64"):
-            specs = Specs(8, "ubuntu-2404-arm")
-        case (True, _, "linux", "x86_64"):
-            specs = Specs(8, "ubuntu-2404")
-
-        # large
-        case (_, True, "darwin", "aarch64"):
-            specs = Specs(12, "macos-26")
-        case (_, True, "linux", "aarch64"):
-            specs = Specs(32, "ubuntu-2404-arm")
-        case (_, True, "linux", "x86_64"):
-            specs = Specs(32, "ubuntu-2404")
-
-        # default
-        case (_, _, "darwin", "aarch64"):
-            specs = Specs(6, "macos-26")
-        case (_, _, "linux", "aarch64"):
-            specs = Specs(8, "ubuntu-2404-arm")
-        case (_, _, "linux", "x86_64"):
-            specs = Specs(8, "ubuntu-2404")
-
-    return {"labels": [f"blacksmith-{specs.vcpu}vcpu-{specs.osv}"]}
+    return {"labels": [f"blacksmith-{vcpu}vcpu-{osv}"]}
 
 
 def main() -> None:
