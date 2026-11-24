@@ -130,19 +130,13 @@ fi
 echo "::group::AMI Build: Stage 1"
 
 stage1_log=$(mktemp)
-for attempt in 1 2 3; do
-	if packer build "${common_packer_args[@]}" \
+for _ in 1 2 3; do
+	packer build "${common_packer_args[@]}" \
 		-var "ami_name=$ami_name-stage-1" \
 		-var "input-hash=$input_hash" \
-		packer/stage1-nix.pkr.hcl 2>&1 | tee "$stage1_log"; then
-		break
-	fi
-	if ! grep -q 'unexpected EOF' "$stage1_log" || ((attempt == 3)); then
-		die "stage 1 failed on attempt $attempt"
-	fi
-	sleep 30
+		packer/stage1-nix.pkr.hcl 2>&1 | tee "$stage1_log" && break
+	grep -q 'unexpected EOF' "$stage1_log" || exit 1
 done
-rm -f "$stage1_log"
 
 stage1_ami_id=$(find_ami "$postgres_release_version-stage1" "Name=tag:inputHash,Values=$input_hash")
 show_ami_info 1 "$stage1_ami_id" "$ami_name-stage-1"
