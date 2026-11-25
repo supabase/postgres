@@ -100,8 +100,35 @@ class PostgresExtensionTest(object):
             f"Expected version {expected_version}, but found {installed_version}"
         )
 
-    def check_upgrade_path(self, pg_version: str):
+    def install_extension_without_before_create(self, version: str):
+        """Install a version with the extension's before-create script moved aside."""
+        script = (
+            f"/var/lib/postgresql/data/extension-custom-scripts/"
+            f"{self.extension_name}/before-create.sql"
+        )
+        self.vm.succeed(f"mv {script} {script}.disabled")
+        try:
+            self.install_extension(version)
+        finally:
+            self.vm.succeed(f"mv {script}.disabled {script}")
+
+    def assert_install_rejected(self, version: str, expected_error: str):
+        """Assert CREATE EXTENSION at the given version fails with expected_error."""
+        self.drop_extension()
+        output = self.vm.fail(
+            f"""psql -U supabase_admin -d postgres -c "CREATE EXTENSION {self.extension_name} WITH VERSION '{version}' CASCADE;" 2>&1"""
+        )
+        assert expected_error in output, (
+            f"Expected '{expected_error}' when installing {version}, got: {output}"
+        )
+
+    def check_upgrade_path(
+        self, pg_version: str, unguarded_version: Optional[str] = None
+    ):
         """Test the complete upgrade path for a PostgreSQL version.
+
+        unguarded_version is installed with the before-create script moved aside,
+        for a version that script rejects.
 
         This method tests all available extension versions for a given PostgreSQL
         version, either through in-place upgrades or reinstallation depending on
@@ -123,7 +150,7 @@ class PostgresExtensionTest(object):
         # Install and verify first version
         first_version = available_versions[0]
         self.drop_extension()
-        self.install_extension(first_version)
+        self.install_version(first_version, unguarded_version)
 
         # Test remaining versions
         for version in available_versions[1:]:
@@ -131,7 +158,13 @@ class PostgresExtensionTest(object):
                 self.update_extension(version)
             else:
                 self.drop_extension()
-                self.install_extension(version)
+                self.install_version(version, unguarded_version)
+
+    def install_version(self, version: str, unguarded_version: Optional[str]):
+        if version == unguarded_version:
+            self.install_extension_without_before_create(version)
+        else:
+            self.install_extension(version)
 
     def check_legacy_versions_upgrade_to_latest(
         self, pg_version: str, legacy_versions: Mapping[str, str]
