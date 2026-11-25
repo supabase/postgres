@@ -57,7 +57,16 @@ sudo nix run .#supascan -- validate --format documentation /path/to/baselines
 
 ### Filesystem discovery
 
-`validate` also runs `discover` when `file-discovery.yml` is in the baselines directory or its parent. It reports setuid or setgid files, world-writable and group-writable paths, unknown owner or group ids, and modes outside the allowlist, skipping `exceptions`. An entry ending in `/**` covers a subtree. Use `--root` to scan an extracted image.
+`validate` also runs `discover` when `file-discovery.yml` is in the baselines directory or its parent. It reports these rules:
+
+- `setuid`: setuid or setgid files not in the `setuid` list.
+- `world-writable`: world-writable paths other than sticky directories.
+- `group-writable`: group-writable paths other than sticky directories.
+- `owner`: owner ids with no passwd entry.
+- `group`: group ids with no group entry.
+- `mode`: modes outside `file_modes` and `dir_modes` under `roots`.
+
+`exceptions` maps a path to the rules it is excused from, for example `/etc/a: [mode]`. A path ending in `/**` covers a subtree. Use `--root` to scan an extracted image.
 
 ## Installation
 
