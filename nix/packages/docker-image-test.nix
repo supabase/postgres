@@ -476,6 +476,55 @@ writeShellApplication {
         log_info "=== pgctld integration checks passed ==="
     }
 
+    # Derived images extend day-0 init by appending a role:path entry to the
+    # inherited POSTGRES_INITDB_SQL_DIRS. pgctld reads list env vars through
+    # viper, which splits on whitespace, not commas. Verify such a dir runs after the base
+    # manifest (the postgres role and base schema already exist) and as the
+    # role named in its entry.
+    verify_init_sql_extension_point() {
+        local container="$1"
+        local pooler_dir="/tmp/pgctld-extension"
+        local extension_dir="/tmp/pgctld-extension-init"
+        local extension_sql="DO \$\$ BEGIN IF to_regrole('authenticator') IS NULL THEN RAISE EXCEPTION 'base init has not run'; END IF; END \$\$; CREATE TABLE public.extension_init_marker (id int);"
+
+        log_info "=== init SQL extension point checks ==="
+
+        printf '%s\n' "$extension_sql" | docker exec -i "$container" \
+            sh -c "mkdir -p $extension_dir && cat > $extension_dir/10-extension.sql"
+
+        local init_out
+        init_out=$(docker exec -e PGDATA="$pooler_dir/pg_data" "$container" sh -c "
+            POSTGRES_INITDB_SQL_DIRS=\"\$POSTGRES_INITDB_SQL_DIRS postgres:$extension_dir\" \
+                /usr/local/bin/pgctld init --pooler-dir $pooler_dir 2>&1") || true
+        if ! echo "$init_out" | grep -q "initialized successfully"; then
+            log_error "  pgctld init with appended init SQL dir failed: $init_out"
+            exit 1
+        fi
+        log_info "  ✓ pgctld init ran base + appended init SQL dirs"
+
+        local start_out
+        start_out=$(docker exec -e PGDATA="$pooler_dir/pg_data" "$container" sh -c "/usr/local/bin/pgctld start --pooler-dir $pooler_dir 2>&1") || true
+        if ! echo "$start_out" | grep -q "started successfully"; then
+            log_error "  pgctld start failed: $start_out"
+            exit 1
+        fi
+
+        local marker_owner
+        marker_owner=$(docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" "$container" sh -c "
+            psql -U $POSTGRES_USER -d postgres -h $pooler_dir/pg_sockets \
+                -tAc \"SELECT tableowner FROM pg_tables WHERE schemaname = 'public' AND tablename = 'extension_init_marker';\" 2>&1") || true
+        if [[ "$marker_owner" != "postgres" ]]; then
+            log_error "  extension_init_marker owner wrong (got: '$marker_owner', want: 'postgres')"
+            exit 1
+        fi
+        log_info "  ✓ appended init SQL dir ran after base init, as postgres"
+
+        docker exec "$container" sh -c "
+            pg_ctl stop -D $pooler_dir/pg_data -m immediate 2>/dev/null || true
+        "
+        log_info "=== init SQL extension point checks passed ==="
+    }
+
     # Bootstrap a multigres container: initdb + pg_ctl start + create supabase_admin + run migrations
     # Multigres images use "tail -f /dev/null" as entrypoint so postgres must be started manually.
     start_multigres_postgres() {
@@ -595,6 +644,7 @@ writeShellApplication {
         # started manually before we can run tests against them.
         if [[ "$VERSION" == multigres-* ]]; then
             verify_pgctld_integration "$CONTAINER_NAME" "$VERSION"
+            verify_init_sql_extension_point "$CONTAINER_NAME"
             start_multigres_postgres "$CONTAINER_NAME"
         fi
 
