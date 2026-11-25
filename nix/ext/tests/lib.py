@@ -102,10 +102,8 @@ class PostgresExtensionTest(object):
 
     def install_extension_without_before_create(self, version: str):
         """Install a version with the extension's before-create script moved aside."""
-        script = (
-            f"/var/lib/postgresql/data/extension-custom-scripts/"
-            f"{self.extension_name}/before-create.sql"
-        )
+        scripts_dir = self.run_sql("SHOW supautils.extension_custom_scripts_path;")
+        script = f"{scripts_dir}/{self.extension_name}/before-create.sql"
         self.vm.succeed(f"mv {script} {script}.disabled")
         try:
             self.install_extension(version)
