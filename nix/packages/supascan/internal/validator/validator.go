@@ -223,7 +223,7 @@ func (v *Validator) findGoss() (string, error) {
 }
 
 func (v *Validator) runSpec(specFile, category, gossPath string) SpecResult {
-	specPath := filepath.Join(v.opts.BaselinesDir, specFile)
+	specPath := v.resolve(specFile)
 	specName := strings.TrimSuffix(specFile, ".yml")
 
 	result := SpecResult{
@@ -232,7 +232,7 @@ func (v *Validator) runSpec(specFile, category, gossPath string) SpecResult {
 	}
 
 	// Check if spec file exists
-	if _, err := os.Stat(specPath); os.IsNotExist(err) {
+	if specPath == "" {
 		result.Skipped = true
 		return result
 	}
@@ -265,13 +265,7 @@ func (v *Validator) runSpec(specFile, category, gossPath string) SpecResult {
 func (v *Validator) runDiscovery() SpecResult {
 	result := SpecResult{Spec: "file-discovery", Category: "critical"}
 
-	policy := ""
-	for _, dir := range []string{v.opts.BaselinesDir, filepath.Dir(v.opts.BaselinesDir)} {
-		if p := filepath.Join(dir, DiscoveryPolicy); fileExists(p) {
-			policy = p
-			break
-		}
-	}
+	policy := v.resolve(DiscoveryPolicy)
 	self, err := os.Executable()
 	if policy == "" || err != nil {
 		result.Skipped = policy == ""
@@ -288,9 +282,16 @@ func (v *Validator) runDiscovery() SpecResult {
 	return result
 }
 
-func fileExists(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil
+// resolve finds a spec in the baselines directory, then in its parent, so
+// files shared by every build live once in the parent.
+func (v *Validator) resolve(name string) string {
+	for _, dir := range []string{v.opts.BaselinesDir, filepath.Dir(v.opts.BaselinesDir)} {
+		p := filepath.Join(dir, name)
+		if _, err := os.Stat(p); err == nil {
+			return p
+		}
+	}
+	return ""
 }
 
 func (v *Validator) printSpecResult(r SpecResult) {

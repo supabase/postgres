@@ -1,6 +1,7 @@
 package validator
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -107,5 +108,25 @@ func TestRunDiscoverySkippedWithoutPolicy(t *testing.T) {
 	r := New(Options{BaselinesDir: filepath.Join(t.TempDir(), "build")}).runDiscovery()
 	if !r.Skipped {
 		t.Error("expected discovery to be skipped when no policy file exists")
+	}
+}
+
+func TestResolvePrefersBuildDirOverParent(t *testing.T) {
+	parent := t.TempDir()
+	build := filepath.Join(parent, "build")
+	os.Mkdir(build, 0o755)
+	os.WriteFile(filepath.Join(parent, "shared.yml"), nil, 0o644)
+	os.WriteFile(filepath.Join(parent, "both.yml"), nil, 0o644)
+	os.WriteFile(filepath.Join(build, "both.yml"), nil, 0o644)
+
+	v := New(Options{BaselinesDir: build})
+	if got := v.resolve("shared.yml"); got != filepath.Join(parent, "shared.yml") {
+		t.Errorf("shared.yml resolved to %q", got)
+	}
+	if got := v.resolve("both.yml"); got != filepath.Join(build, "both.yml") {
+		t.Errorf("both.yml resolved to %q", got)
+	}
+	if got := v.resolve("missing.yml"); got != "" {
+		t.Errorf("missing.yml resolved to %q", got)
 	}
 }
