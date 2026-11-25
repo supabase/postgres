@@ -8,10 +8,12 @@ workflows:
         - 'aws-actions/configure-aws-credentials@v6.3.0'
         - 'slackapi/slack-github-action@v4.0.0'
         - 'softprops/action-gh-release@v3.0.4'
+        - 'useblacksmith/stickydisk@v1.8.0'
     '.github/workflows/check-extension-versions.yml':
         - 'actions/checkout@v7.0.1'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
         - 'peter-evans/create-pull-request@v8.1.3'
+        - 'useblacksmith/stickydisk@v1.8.0'
     '.github/workflows/cleanup-stale-ec2.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/download-artifact@v8.0.2'
@@ -24,14 +26,17 @@ workflows:
         - 'actions/upload-artifact@v7.0.2'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
         - 'softprops/action-gh-release@v3.0.4'
+        - 'useblacksmith/stickydisk@v1.8.0'
     '.github/workflows/cli-smoke-test.yml':
         - 'actions/checkout@v7.0.1'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
         - 'docker/setup-buildx-action@v4.4.1'
+        - 'useblacksmith/stickydisk@v1.8.0'
     '.github/workflows/docker-image-test.yml':
         - 'actions/checkout@v7.0.1'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
         - 'docker/setup-buildx-action@v4.4.1'
+        - 'useblacksmith/stickydisk@v1.8.0'
     '.github/workflows/dockerhub-release-matrix.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/download-artifact@v8.0.2'
@@ -40,6 +45,7 @@ workflows:
         - 'docker/build-push-action@v7.4.0'
         - 'docker/login-action@v4.8.0'
         - 'docker/setup-buildx-action@v4.4.1'
+        - 'useblacksmith/stickydisk@v1.8.0'
     '.github/workflows/integration-trigger.yml': []
     '.github/workflows/manual-docker-release.yml':
         - 'actions/checkout@v7.0.1'
@@ -49,6 +55,7 @@ workflows:
         - 'docker/build-push-action@v7.4.0'
         - 'docker/login-action@v4.8.0'
         - 'docker/setup-buildx-action@v4.4.1'
+        - 'useblacksmith/stickydisk@v1.8.0'
     '.github/workflows/mirror-postgrest.yml':
         - 'actions/checkout@v7.0.1'
         - 'mikefarah/yq@v4.54.3'
@@ -66,11 +73,17 @@ workflows:
         - 'actions/download-artifact@v8.0.2'
         - 'actions/upload-artifact@v7.0.2'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
+        - 'useblacksmith/stickydisk@v1.8.0'
     '.github/workflows/nix-dependency-analysis.yml':
         - 'actions/checkout@v7.0.1'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
         - 'peter-evans/create-or-update-comment@v5.0.0'
         - 'peter-evans/find-comment@v4.0.0'
+        - 'useblacksmith/stickydisk@v1.8.0'
+    '.github/workflows/nix-store-disk.yml':
+        - 'actions/checkout@v7.0.1'
+        - 'aws-actions/configure-aws-credentials@v6.3.0'
+        - 'useblacksmith/stickydisk@v1.8.0'
     '.github/workflows/public-integration-doorbell.yml': []
     '.github/workflows/publish-migrations-prod.yml':
         - 'actions/checkout@v7.0.1'
@@ -82,38 +95,46 @@ workflows:
         - 'actions/checkout@v7.0.1'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
         - 'slackapi/slack-github-action@v4.0.0'
+        - 'useblacksmith/stickydisk@v1.8.0'
     '.github/workflows/publish-nix-pgupgrade-scripts.yml':
         - 'actions/checkout@v7.0.1'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
         - 'slackapi/slack-github-action@v4.0.0'
+        - 'useblacksmith/stickydisk@v1.8.0'
     '.github/workflows/qemu-image-build.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/upload-artifact@v7.0.2'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
+        - 'useblacksmith/stickydisk@v1.8.0'
     '.github/workflows/qemu-image-release.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/download-artifact@v8.0.2'
         - 'aws-actions/amazon-ecr-login@v2.1.7'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
         - 'slackapi/slack-github-action@v4.0.0'
+        - 'useblacksmith/stickydisk@v1.8.0'
     '.github/workflows/renovate-refresh-ansible-checksums.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/create-github-app-token@v3.3.0'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
+        - 'useblacksmith/stickydisk@v1.8.0'
     '.github/workflows/testinfra-ami-build.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/download-artifact@v8.0.2'
         - 'actions/upload-artifact@v7.0.2'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
+        - 'useblacksmith/stickydisk@v1.8.0'
     '.github/workflows/update-flake-lock-non-critical.yml':
         - 'actions/checkout@v7.0.1'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
         - 'peter-evans/create-pull-request@v8.1.3'
+        - 'useblacksmith/stickydisk@v1.8.0'
     '.github/workflows/update-flake-lock.yml':
         - 'actions/checkout@v7.0.1'
         - 'actions/create-github-app-token@v3.3.0'
         - 'aws-actions/configure-aws-credentials@v6.3.0'
         - 'determinatesystems/update-flake-lock@v29'
+        - 'useblacksmith/stickydisk@v1.8.0'
 dependencies:
     'actions/checkout@v7.0.1':
         ref: 'v7.0.1'
@@ -238,3 +259,8 @@ dependencies:
         commit: 'sha1-8a0cd651e5b2365bd640854a3fa5dfc70e4875f3'
         owner_id: 2242
         repo_id: 204253808
+    'useblacksmith/stickydisk@v1.8.0':
+        ref: 'v1.8.0'
+        commit: 'sha1-61dac6a8aa5927f7d3343d9dbdc8153787d08a1c'
+        owner_id: 156274793
+        repo_id: 899799214
