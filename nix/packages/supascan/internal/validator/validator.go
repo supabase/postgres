@@ -259,9 +259,8 @@ func (v *Validator) runSpec(specFile, category, gossPath string) SpecResult {
 	return result
 }
 
-// runDiscovery re-executes supascan under sudo, like goss specs, so the walk
-// can read every directory. The policy comes from the baselines directory or
-// its parent.
+// runDiscovery runs `supascan discover`, which re-runs itself under sudo. The
+// policy comes from the baselines directory or its parent.
 func (v *Validator) runDiscovery() SpecResult {
 	result := SpecResult{Spec: "file-discovery", Category: "critical"}
 
@@ -273,7 +272,7 @@ func (v *Validator) runDiscovery() SpecResult {
 	self, _ := os.Executable()
 
 	var out bytes.Buffer
-	cmd := exec.Command("sudo", self, "discover", policy)
+	cmd := exec.Command(self, "discover", policy)
 	cmd.Stdout, cmd.Stderr = &out, &out
 	result.Error = cmd.Run()
 	result.Passed = result.Error == nil

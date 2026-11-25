@@ -66,7 +66,7 @@ sudo nix run .#supascan -- validate --format documentation /path/to/baselines
 - `group`: group ids with no group entry.
 - `mode`: modes outside `file_modes` and `dir_modes` under `roots`.
 
-`exceptions` maps a path to the rules it is excused from, for example `/etc/a: [mode]`. A path ending in `/**` covers a subtree. Use `--root` to scan an extracted image.
+`exceptions` maps a path to the rules it is excused from, for example `/etc/a: [mode]`. A path ending in `/**` covers a subtree. `discover` re-runs itself under `sudo -n` when not root. Use `--root` to scan an extracted image.
 
 ## Installation
 
