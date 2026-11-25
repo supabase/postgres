@@ -11,6 +11,9 @@ from test_driver.machine import Machine
 
 Versions = Mapping[str, Sequence[str]]
 
+# Versions whose install the extension's before-create script rejects on purpose.
+BEFORE_CREATE_REJECTED = {"supabase_vault": "0.2.8"}
+
 
 class PostgresExtensionTest(object):
     def __init__(
@@ -40,7 +43,6 @@ class PostgresExtensionTest(object):
         self.sql_test_dir = sql_test_dir
         self.schema = schema
         self.lib_name = lib_name or extension_name
-        self.skip_before_create_for: Optional[str] = None
 
     def create_schema(self):
         self.run_sql(f"CREATE SCHEMA IF NOT EXISTS {self.schema};")
@@ -64,7 +66,7 @@ class PostgresExtensionTest(object):
         else:
             ext_schema = ""
         script = None
-        if version == self.skip_before_create_for:
+        if version == BEFORE_CREATE_REJECTED.get(self.extension_name):
             scripts_dir = self.run_sql("SHOW supautils.extension_custom_scripts_path;")
             script = f"{scripts_dir}/{self.extension_name}/before-create.sql"
             self.vm.succeed(f"mv {script} {script}.disabled")

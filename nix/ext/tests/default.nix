@@ -52,7 +52,6 @@ let
     {
       support_upgrade ? true,
       check_install_all_versions ? true,
-      skip_before_create_for ? null,
       extraNode ? { },
     }:
     pname:
@@ -110,9 +109,6 @@ let
           server.wait_for_unit("supabase-db-init.service")
 
           test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade)
-          ${lib.optionalString (
-            skip_before_create_for != null
-          ) ''test.skip_before_create_for = "${skip_before_create_for}"''}
 
           with subtest("Check upgrade path with postgresql 15"):
             if check_install_all_versions:
@@ -584,7 +580,6 @@ builtins.listToAttrs (
       {
         name = "vault";
         pname = "supabase_vault";
-        args.skip_before_create_for = "0.2.8";
       }
       {
         pname = "pg_repack";
