@@ -25,9 +25,7 @@ func init() {
 	rootCmd.AddCommand(discoverCmd)
 }
 
-// escalate replaces the process with `sudo -n supascan discover ...` so the
-// walk can read every directory. It uses fixed paths and a minimal
-// environment, and -n fails instead of prompting.
+// escalate re-runs discover under sudo -n with a fixed path and minimal environment.
 func escalate() error {
 	if os.Geteuid() == 0 {
 		return nil

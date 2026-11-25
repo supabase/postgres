@@ -9,7 +9,6 @@ import (
 	"strings"
 )
 
-// DiscoveryPolicy is the filesystem discovery policy in a baselines directory.
 const DiscoveryPolicy = "file-discovery.yml"
 
 // Spec categories
@@ -259,8 +258,6 @@ func (v *Validator) runSpec(specFile, category, gossPath string) SpecResult {
 	return result
 }
 
-// runDiscovery runs `supascan discover`, which re-runs itself under sudo. The
-// policy comes from the baselines directory or its parent.
 func (v *Validator) runDiscovery() SpecResult {
 	result := SpecResult{Spec: "file-discovery", Category: "critical"}
 
@@ -280,8 +277,7 @@ func (v *Validator) runDiscovery() SpecResult {
 	return result
 }
 
-// resolve finds a spec in the baselines directory, then in its parent, so
-// files shared by every build live once in the parent.
+// resolve looks in the baselines directory, then its parent.
 func (v *Validator) resolve(name string) string {
 	for _, dir := range []string{v.opts.BaselinesDir, filepath.Dir(v.opts.BaselinesDir)} {
 		p := filepath.Join(dir, name)

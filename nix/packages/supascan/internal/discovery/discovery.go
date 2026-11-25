@@ -74,8 +74,7 @@ func readIDs(path string) (map[uint32]bool, error) {
 	return ids, sc.Err()
 }
 
-// Scan walks root and returns "path: problem" lines. Paths are relative to
-// root with a leading slash, so an extracted image can be scanned in place.
+// Scan reports paths relative to root, so an extracted image can be scanned in place.
 func Scan(root string, p *Policy) ([]string, error) {
 	users, err := readIDs(filepath.Join(root, "etc/passwd"))
 	if err != nil {
