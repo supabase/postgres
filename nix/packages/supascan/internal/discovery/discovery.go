@@ -54,20 +54,56 @@ type Result struct {
 }
 
 func LoadPolicy(path string) (*Policy, error) {
+	return loadPolicy(path, map[string]bool{})
+}
+
+func loadPolicy(path string, active map[string]bool) (*Policy, error) {
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return nil, err
+	}
+	if active[abs] {
+		return nil, fmt.Errorf("include cycle at %s", path)
+	}
+	active[abs] = true
+	defer delete(active, abs)
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	var p Policy
-	if err := yaml.Unmarshal(data, &p); err != nil {
+	var raw struct {
+		Include []string `yaml:"include"`
+		Policy  `yaml:",inline"`
+	}
+	if err := yaml.Unmarshal(data, &raw); err != nil {
 		return nil, fmt.Errorf("parse %s: %w", path, err)
 	}
-	for _, m := range append(append([]string{}, p.FileModes...), p.DirModes...) {
+
+	merged := &Policy{}
+	for _, inc := range raw.Include {
+		base, err := loadPolicy(filepath.Join(filepath.Dir(path), inc), active)
+		if err != nil {
+			return nil, err
+		}
+		merged.merge(base)
+	}
+	merged.merge(&raw.Policy)
+
+	for _, m := range append(append([]string{}, merged.FileModes...), merged.DirModes...) {
 		if _, err := strconv.ParseUint(m, 8, 32); err != nil {
 			return nil, fmt.Errorf("invalid mode %q in %s", m, path)
 		}
 	}
-	return &p, nil
+	return merged, nil
+}
+
+func (p *Policy) merge(o *Policy) {
+	p.Roots = append(p.Roots, o.Roots...)
+	p.FileModes = append(p.FileModes, o.FileModes...)
+	p.DirModes = append(p.DirModes, o.DirModes...)
+	p.Setuid = append(p.Setuid, o.Setuid...)
+	p.Exceptions = append(p.Exceptions, o.Exceptions...)
 }
 
 type entry struct {

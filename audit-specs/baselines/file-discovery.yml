@@ -1,0 +1,125 @@
+# Shared filesystem discovery policy for supascan validate.
+# Each build directory includes this file from its own file-discovery.yml.
+# Exceptions below were derived from audit-specs/baselines/baseline.yml
+# (AMI arm64 capture) and Ubuntu defaults. Directory modes and setuid bits
+# are not in that capture, so the first run on a built image may report more.
+roots: [/etc, /usr/local, /opt, /data, /var/lib]
+file_modes: ["0644", "0640", "0600", "0440", "0755"]
+dir_modes: ["0755", "0750", "0700"]
+setuid:
+  - /usr/bin/chage
+  - /usr/bin/chfn
+  - /usr/bin/chsh
+  - /usr/bin/crontab
+  - /usr/bin/dotlockfile
+  - /usr/bin/expiry
+  - /usr/bin/fusermount3
+  - /usr/bin/gpasswd
+  - /usr/bin/mount
+  - /usr/bin/newgrp
+  - /usr/bin/passwd
+  - /usr/bin/pkexec
+  - /usr/bin/ssh-agent
+  - /usr/bin/su
+  - /usr/bin/sudo
+  - /usr/bin/umount
+  - /usr/bin/wall
+  - /usr/bin/write.ul
+  - /usr/lib/dbus-1.0/dbus-daemon-launch-helper
+  - /usr/lib/openssh/ssh-keysign
+  - /usr/lib/polkit-1/polkit-agent-helper-1
+  - /usr/sbin/pam_extrausers_chkpwd
+  - /usr/sbin/unix_chkpwd
+exceptions:
+  - path: /var/local
+    reason: Ubuntu base default or cloud-init state
+  - path: /var/mail
+    reason: Ubuntu base default or cloud-init state
+  - path: /var/log/btmp
+    reason: Ubuntu base default or cloud-init state
+  - path: /var/log/lastlog
+    reason: Ubuntu base default or cloud-init state
+  - path: /var/log/wtmp
+    reason: Ubuntu base default or cloud-init state
+  - path: /var/lib/cloud/instances/**
+    reason: Ubuntu base default or cloud-init state
+  - path: /usr/local/kong/**
+    reason: Group-writable or non-allowlisted modes in baseline.yml
+  - path: /usr/local/openresty/**
+    reason: Group-writable or non-allowlisted modes in baseline.yml
+  - path: /etc/vector/examples/**
+    reason: Group-writable or non-allowlisted modes in baseline.yml
+  - path: /etc/pgbouncer-custom/**
+    reason: Group-writable or non-allowlisted modes in baseline.yml
+  - path: /etc/postgresql-custom/extension-custom-scripts/**
+    reason: Group-writable or non-allowlisted modes in baseline.yml
+  - path: /etc/envoy/envoy.yaml
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /etc/envoy/lds.yaml
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /etc/gotrue.env
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /etc/kong/kong.conf
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /etc/kong/kong.conf.default
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /etc/kong/kong.logrotate
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /etc/logrotate.d/logrotate-postgres-auth.conf
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /etc/logrotate.d/logrotate-postgres-csv.conf
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /etc/logrotate.d/logrotate-postgres.conf
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /etc/logrotate.d/logrotate-walg.conf
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /etc/machine-id
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /etc/pgbouncer/userlist.txt
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /etc/postgresql-custom/custom-overrides.conf
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /etc/postgresql-custom/generated-optimizations.conf
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /etc/postgresql-custom/read-replica.conf
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /etc/postgresql-custom/supautils.conf
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /etc/postgresql-custom/wal-g.conf
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /etc/postgresql/pg_hba.conf
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /etc/postgrest/base.conf
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /etc/postgrest/merge.sh
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /etc/ssl/adminapi/server.crt
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /etc/ssl/adminapi/server.key
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /etc/wal-g/config.json
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /opt/envoy
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /opt/envoy-hot-restarter.py
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /opt/start-envoy.sh
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /usr/lib/systemd/system/kong.service
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /usr/local/bin/kong
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /usr/local/bin/lapis
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /usr/local/bin/luarocks
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /usr/local/bin/luarocks-admin
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /usr/local/bin/project-init.sh
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /usr/local/bin/systemd-networkd-check-and-fix.sh
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /usr/local/etc/luarocks/config-5.1.lua
+    reason: Group-writable or non-allowlisted mode in baseline.yml
+  - path: /var/lib/cloud/scripts/per-boot/supaboot.sh
+    reason: Group-writable or non-allowlisted mode in baseline.yml

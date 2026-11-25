@@ -96,6 +96,34 @@ func TestLoadPolicy(t *testing.T) {
 	}
 }
 
+func TestLoadPolicyInclude(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, "build"), 0o755)
+	os.WriteFile(filepath.Join(dir, "common.yml"), []byte("roots: [/etc]\nfile_modes: ['0644']\nsetuid: [/usr/bin/su]\nexceptions:\n  - path: /etc/a\n"), 0o644)
+	child := filepath.Join(dir, "build", "policy.yml")
+	os.WriteFile(child, []byte("include: [../common.yml]\nsetuid: [/usr/bin/sudo]\nexceptions:\n  - path: /etc/b\n"), 0o644)
+	p, err := LoadPolicy(child)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(p.Roots) != 1 || len(p.FileModes) != 1 || len(p.Setuid) != 2 || len(p.Exceptions) != 2 {
+		t.Errorf("unexpected merge: %+v", p)
+	}
+	if !p.excepted("/etc/a") || !p.excepted("/etc/b") || !p.isSetuidAllowed("/usr/bin/sudo") {
+		t.Errorf("merged policy missing entries: %+v", p)
+	}
+}
+
+func TestLoadPolicyIncludeCycle(t *testing.T) {
+	dir := t.TempDir()
+	a, b := filepath.Join(dir, "a.yml"), filepath.Join(dir, "b.yml")
+	os.WriteFile(a, []byte("include: [b.yml]\n"), 0o644)
+	os.WriteFile(b, []byte("include: [a.yml]\n"), 0o644)
+	if _, err := LoadPolicy(a); err == nil || !strings.Contains(err.Error(), "cycle") {
+		t.Errorf("expected include cycle error, got %v", err)
+	}
+}
+
 func ownerOf(t *testing.T, path string) (int, int) {
 	t.Helper()
 	info, err := os.Stat(path)

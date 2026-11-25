@@ -53,7 +53,7 @@ sudo nix run .#supascan -- validate --format documentation /path/to/baselines
 
 ### Filesystem discovery
 
-`validate` also runs `discover` when the baselines directory has a `file-discovery.yml`. goss only checks listed paths, so discovery walks the filesystem and reports setuid or setgid files outside `setuid`, world-writable paths other than sticky directories, group-writable paths, owner or group ids with no passwd or group entry, and modes outside `file_modes` and `dir_modes` under `roots`. Paths in `exceptions` are skipped. An entry ending in `/**` covers the whole subtree.
+`validate` also runs `discover` when the baselines directory has a `file-discovery.yml`. goss only checks listed paths, so discovery walks the filesystem and reports setuid or setgid files outside `setuid`, world-writable paths other than sticky directories, group-writable paths, owner or group ids with no passwd or group entry, and modes outside `file_modes` and `dir_modes` under `roots`. Paths in `exceptions` are skipped. An entry ending in `/**` covers the whole subtree. `include: [../file-discovery.yml]` merges another policy file, resolved relative to the including file.
 
 ```bash
 sudo supascan discover audit-specs/baselines/ami-build-amd64/file-discovery.yml
