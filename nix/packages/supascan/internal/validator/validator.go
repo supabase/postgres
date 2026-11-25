@@ -259,32 +259,38 @@ func (v *Validator) runSpec(specFile, category, gossPath string) SpecResult {
 	return result
 }
 
-// runDiscovery re-executes supascan under sudo so the walk can read every
-// directory, the same way goss specs run.
+// runDiscovery re-executes supascan under sudo, like goss specs, so the walk
+// can read every directory. The policy comes from the baselines directory or
+// its parent.
 func (v *Validator) runDiscovery() SpecResult {
 	result := SpecResult{Spec: "file-discovery", Category: "critical"}
 
-	policyPath := filepath.Join(v.opts.BaselinesDir, DiscoveryPolicy)
-	if _, err := os.Stat(policyPath); os.IsNotExist(err) {
-		result.Skipped = true
-		return result
+	policy := ""
+	for _, dir := range []string{v.opts.BaselinesDir, filepath.Dir(v.opts.BaselinesDir)} {
+		if p := filepath.Join(dir, DiscoveryPolicy); fileExists(p) {
+			policy = p
+			break
+		}
 	}
-
 	self, err := os.Executable()
-	if err != nil {
+	if policy == "" || err != nil {
+		result.Skipped = policy == ""
 		result.Error = err
 		return result
 	}
 
-	cmd := exec.Command("sudo", self, "discover", policyPath)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err = cmd.Run()
-	result.Output = stdout.String() + stderr.String()
-	result.Error = err
-	result.Passed = err == nil
+	var out bytes.Buffer
+	cmd := exec.Command("sudo", self, "discover", policy)
+	cmd.Stdout, cmd.Stderr = &out, &out
+	result.Error = cmd.Run()
+	result.Passed = result.Error == nil
+	result.Output = out.String()
 	return result
+}
+
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }
 
 func (v *Validator) printSpecResult(r SpecResult) {

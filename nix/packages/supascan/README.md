@@ -8,7 +8,6 @@ A comprehensive system auditing toolkit for generating and validating baseline s
 
 - **`supascan genspec`** - Generate complete machine baseline (packages, services, configs, users, groups, mounts, kernel params)
 - **`supascan validate`** - Validate machines against baseline specifications with critical/advisory categorization
-- **`supascan discover`** - Scan the filesystem for setuid files, world or group-writable paths, orphaned owner ids, and modes outside an allowlist
 - **`supascan split`** - Split a monolithic baseline into separate section files for easier auditing
 
 **Use Cases:**
@@ -58,14 +57,7 @@ sudo nix run .#supascan -- validate --format documentation /path/to/baselines
 
 ### Filesystem discovery
 
-`validate` also runs `discover` when the baselines directory has a `file-discovery.yml`. goss only checks listed paths, so discovery walks the filesystem and reports setuid or setgid files outside `setuid`, world-writable paths other than sticky directories, group-writable paths, owner or group ids with no passwd or group entry, and modes outside `file_modes` and `dir_modes` under `roots`. Paths in `exceptions` are skipped. An entry ending in `/**` covers the whole subtree. `include: [../file-discovery.yml]` merges another policy file, resolved relative to the including file.
-
-```bash
-sudo supascan discover audit-specs/baselines/ami-build-amd64/file-discovery.yml
-
-# Scan an extracted image
-sudo supascan discover --root /mnt/image policy.yml
-```
+`validate` also runs `discover` when `file-discovery.yml` is in the baselines directory or its parent. It reports setuid or setgid files, world-writable and group-writable paths, unknown owner or group ids, and modes outside the allowlist, skipping `exceptions`. An entry ending in `/**` covers a subtree. Use `--root` to scan an extracted image.
 
 ## Installation
 

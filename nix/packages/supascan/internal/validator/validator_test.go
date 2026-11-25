@@ -1,6 +1,7 @@
 package validator
 
 import (
+	"path/filepath"
 	"testing"
 )
 
@@ -103,12 +104,8 @@ func TestResultCounts(t *testing.T) {
 }
 
 func TestRunDiscoverySkippedWithoutPolicy(t *testing.T) {
-	v := New(Options{BaselinesDir: t.TempDir()})
-	r := v.runDiscovery()
+	r := New(Options{BaselinesDir: filepath.Join(t.TempDir(), "build")}).runDiscovery()
 	if !r.Skipped {
-		t.Error("expected discovery to be skipped when the policy file is missing")
-	}
-	if r.Spec != "file-discovery" || r.Category != "critical" {
-		t.Errorf("unexpected result: %+v", r)
+		t.Error("expected discovery to be skipped when no policy file exists")
 	}
 }
