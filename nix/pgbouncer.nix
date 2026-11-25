@@ -25,7 +25,7 @@ stdenv.mkDerivation rec {
 
   src = fetchurl {
     url = "https://www.pgbouncer.org/downloads/files/${version}/${pname}-${version}.tar.gz";
-    hash = "sha256-blZq6S/j739qG54m1gSffXyjnEDinns49tVQCuFdhGU=";
+    hash = "sha256-AIhqKZS0hEzTcRCXDfd3dyz8QqdMQAUiyC+6UJo/Qtk=";
   };
 
   nativeBuildInputs = [
