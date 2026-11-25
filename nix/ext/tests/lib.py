@@ -110,10 +110,12 @@ class PostgresExtensionTest(object):
         finally:
             self.vm.succeed(f"mv {script}.disabled {script}")
 
-    def check_upgrade_path(self, pg_version: str, unguarded_first: bool = False):
+    def check_upgrade_path(
+        self, pg_version: str, skip_before_create_on_first_install: bool = False
+    ):
         """Test the complete upgrade path for a PostgreSQL version.
 
-        unguarded_first installs the first version with the before-create script
+        skip_before_create_on_first_install installs the first version with the before-create script
         moved aside, for a version that script rejects.
 
         This method tests all available extension versions for a given PostgreSQL
@@ -136,7 +138,7 @@ class PostgresExtensionTest(object):
         # Install and verify first version
         first_version = available_versions[0]
         self.drop_extension()
-        if unguarded_first:
+        if skip_before_create_on_first_install:
             self.install_extension_without_before_create(first_version)
         else:
             self.install_extension(first_version)

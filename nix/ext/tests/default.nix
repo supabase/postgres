@@ -52,7 +52,7 @@ let
     {
       support_upgrade ? true,
       check_install_all_versions ? true,
-      before_create_guard ? false,
+      skip_before_create_on_first_install ? false,
       extraNode ? { },
     }:
     pname:
@@ -99,7 +99,9 @@ let
           extension_name = "${pname}"
           support_upgrade = ${if support_upgrade then "True" else "False"}
           check_install_all_versions = ${if check_install_all_versions then "True" else "False"}
-          unguarded_first = ${if before_create_guard then "True" else "False"}
+          skip_before_create_on_first_install = ${
+            if skip_before_create_on_first_install then "True" else "False"
+          }
           pg17_configuration = "${pg17-configuration}"
           orioledb17_configuration = "${orioledb17-configuration}"
           sql_test_directory = Path("${../../tests}")
@@ -114,7 +116,7 @@ let
 
           with subtest("Check upgrade path with postgresql 15"):
             if check_install_all_versions:
-              test.check_upgrade_path("15", unguarded_first)
+              test.check_upgrade_path("15", skip_before_create_on_first_install)
 
           last_version = None
           with subtest("Check the install of the last version of the extension"):
@@ -149,7 +151,7 @@ let
 
           with subtest("Check upgrade path with postgresql 17"):
             if check_install_all_versions:
-              test.check_upgrade_path("17", unguarded_first)
+              test.check_upgrade_path("17", skip_before_create_on_first_install)
 
           with subtest("switch to orioledb 17"):
             server.execute(
@@ -181,7 +183,7 @@ let
 
           with subtest("Check upgrade path with orioledb 17"):
             if check_install_all_versions:
-              test.check_upgrade_path("orioledb-17", unguarded_first)
+              test.check_upgrade_path("orioledb-17", skip_before_create_on_first_install)
         '';
     };
   extTest =
@@ -582,7 +584,7 @@ builtins.listToAttrs (
       {
         name = "vault";
         pname = "supabase_vault";
-        args.before_create_guard = true;
+        args.skip_before_create_on_first_install = true;
       }
       {
         pname = "pg_repack";
