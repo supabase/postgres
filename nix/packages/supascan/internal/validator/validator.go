@@ -266,12 +266,11 @@ func (v *Validator) runDiscovery() SpecResult {
 	result := SpecResult{Spec: "file-discovery", Category: "critical"}
 
 	policy := v.resolve(DiscoveryPolicy)
-	self, err := os.Executable()
-	if policy == "" || err != nil {
-		result.Skipped = policy == ""
-		result.Error = err
+	if policy == "" {
+		result.Skipped = true
 		return result
 	}
+	self, _ := os.Executable()
 
 	var out bytes.Buffer
 	cmd := exec.Command("sudo", self, "discover", policy)

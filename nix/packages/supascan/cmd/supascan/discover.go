@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -14,12 +13,8 @@ var discoverRoot string
 var discoverCmd = &cobra.Command{
 	Use:   "discover <policy-file>",
 	Short: "Scan the filesystem for permission and ownership drift",
-	Long: `Walk the filesystem and report setuid or setgid files outside the allowlist,
-world-writable paths other than sticky directories, group-writable paths, owner or
-group ids with no passwd or group entry, and modes outside the allowlist under the
-policy roots. Exits non-zero when anything is reported. Run as root.`,
-	Args: cobra.ExactArgs(1),
-	RunE: runDiscover,
+	Args:  cobra.ExactArgs(1),
+	RunE:  runDiscover,
 }
 
 func init() {
@@ -32,7 +27,7 @@ func runDiscover(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	findings, err := discovery.Scan(context.Background(), discoverRoot, policy)
+	findings, err := discovery.Scan(discoverRoot, policy)
 	if err != nil {
 		return err
 	}

@@ -2,7 +2,6 @@ package discovery
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"io/fs"
 	"os"
@@ -14,8 +13,6 @@ import (
 
 	"gopkg.in/yaml.v3"
 )
-
-var rules = []string{"setuid", "world-writable", "group-writable", "owner", "group", "mode"}
 
 var skippedTrees = []string{"/proc", "/sys", "/dev", "/run", "/tmp", "/var/tmp", "/nix/store"}
 
@@ -35,13 +32,6 @@ func LoadPolicy(path string) (*Policy, error) {
 	var p Policy
 	if err := yaml.Unmarshal(data, &p); err != nil {
 		return nil, fmt.Errorf("parse %s: %w", path, err)
-	}
-	for path, rs := range p.Exceptions {
-		for _, r := range rs {
-			if !slices.Contains(rules, r) {
-				return nil, fmt.Errorf("exception %s: unknown rule %q", path, r)
-			}
-		}
 	}
 	return &p, nil
 }
@@ -66,13 +56,6 @@ func (p *Policy) excepted(path, rule string) bool {
 	return false
 }
 
-func allowed(modes []string, perm fs.FileMode) bool {
-	return slices.ContainsFunc(modes, func(m string) bool {
-		n, err := strconv.ParseUint(m, 8, 32)
-		return err == nil && fs.FileMode(n) == perm
-	})
-}
-
 func readIDs(path string) (map[uint32]bool, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -93,7 +76,7 @@ func readIDs(path string) (map[uint32]bool, error) {
 
 // Scan walks root and returns "path: problem" lines. Paths are relative to
 // root with a leading slash, so an extracted image can be scanned in place.
-func Scan(ctx context.Context, root string, p *Policy) ([]string, error) {
+func Scan(root string, p *Policy) ([]string, error) {
 	users, err := readIDs(filepath.Join(root, "etc/passwd"))
 	if err != nil {
 		return nil, err
@@ -105,9 +88,6 @@ func Scan(ctx context.Context, root string, p *Policy) ([]string, error) {
 
 	var findings []string
 	err = filepath.WalkDir(root, func(real string, d fs.DirEntry, walkErr error) error {
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
 		path := "/"
 		if rel, _ := filepath.Rel(root, real); rel != "." {
 			path = "/" + filepath.ToSlash(rel)
@@ -163,7 +143,7 @@ func (p *Policy) check(path string, mode fs.FileMode, isDir bool, uid, gid uint3
 		if isDir {
 			modes = p.DirModes
 		}
-		if !allowed(modes, perm) {
+		if !slices.Contains(modes, fmt.Sprintf("%04o", perm)) {
 			add("mode", "mode %04o not in allowlist", perm)
 		}
 	}

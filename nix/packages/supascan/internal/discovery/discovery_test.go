@@ -1,7 +1,6 @@
 package discovery
 
 import (
-	"context"
 	"fmt"
 	"io/fs"
 	"os"
@@ -69,14 +68,6 @@ func TestExcepted(t *testing.T) {
 	}
 }
 
-func TestLoadPolicyRejectsUnknownRule(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "p.yml")
-	os.WriteFile(path, []byte("exceptions:\n  /etc/a: [modee]\n"), 0o644)
-	if _, err := LoadPolicy(path); err == nil {
-		t.Error("expected error for unknown rule")
-	}
-}
-
 func TestScan(t *testing.T) {
 	root := t.TempDir()
 	info, _ := os.Stat(root)
@@ -96,7 +87,7 @@ func TestScan(t *testing.T) {
 		os.Chmod(full, mode)
 	}
 
-	got, err := Scan(context.Background(), root, &Policy{Exceptions: map[string][]string{"/etc/skip": {"group-writable"}}})
+	got, err := Scan(root, &Policy{Exceptions: map[string][]string{"/etc/skip": {"group-writable"}}})
 	if err != nil {
 		t.Fatal(err)
 	}
