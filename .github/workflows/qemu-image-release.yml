@@ -71,7 +71,7 @@ jobs:
 
       - name: Login to Amazon ECR Staging
         id: login-ecr-private-dev
-        uses: aws-actions/amazon-ecr-login@v2.1.7
+        uses: aws-actions/amazon-ecr-login@v2.2.0
 
       - name: Push docker image to Amazon ECR
         env:
@@ -92,7 +92,7 @@ jobs:
       - name: Login to Amazon ECR Prod
         if: env.TARGET_ARCH == 'arm64'
         id: login-ecr-private-prod
-        uses: aws-actions/amazon-ecr-login@v2.1.7
+        uses: aws-actions/amazon-ecr-login@v2.2.0
 
       - name: Push docker image to Amazon ECR Prod
         if: env.TARGET_ARCH == 'arm64'
