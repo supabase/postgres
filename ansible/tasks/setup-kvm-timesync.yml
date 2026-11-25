@@ -14,8 +14,8 @@
   ansible.builtin.systemd_service:
     daemon_reload: true
     enabled: true
-    name: 'phc2sys'
-    state: 'stopped'
+    name: "phc2sys"
+    state: "stopped"
 
 - name: phc2sys - remove systemd-timesyncd
   ansible.builtin.apt:

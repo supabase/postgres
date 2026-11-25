@@ -5,12 +5,14 @@ A comprehensive system auditing toolkit for generating and validating baseline s
 ## Features
 
 **One Unified CLI with Three Commands:**
+
 - **`supascan genspec`** - Generate complete machine baseline (packages, services, configs, users, groups, mounts, kernel params)
 - **`supascan validate`** - Validate machines against baseline specifications with critical/advisory categorization
 - **`supascan discover`** - Scan the filesystem for setuid files, world or group-writable paths, orphaned owner ids, and modes outside an allowlist
 - **`supascan split`** - Split a monolithic baseline into separate section files for easier auditing
 
 **Use Cases:**
+
 - Create baselines from "golden" machines
 - Validate infrastructure configuration drift
 - Continuous compliance monitoring
@@ -19,6 +21,7 @@ A comprehensive system auditing toolkit for generating and validating baseline s
 ## Quick Start
 
 ### Generate a Machine Baseline
+
 ```bash
 # Capture complete system state
 sudo nix run .#supascan -- genspec baseline.yml
@@ -31,6 +34,7 @@ sudo nix run .#supascan -- genspec --shallow-dirs /nix/store --shallow-dirs /dat
 ```
 
 ### Split Baseline into Sections
+
 ```bash
 # Split into separate files (service.yml, user.yml, files-security.yml, etc.)
 nix run .#supascan -- split baseline.yml
@@ -40,6 +44,7 @@ nix run .#supascan -- split baseline.yml --output-dir /path/to/baselines
 ```
 
 ### Validate Against Baselines
+
 ```bash
 # Validate system against baseline specs directory
 sudo nix run .#supascan -- validate /path/to/baselines
@@ -65,12 +70,14 @@ sudo supascan discover --root /mnt/image policy.yml
 ## Installation
 
 ### Using Nix Flake
+
 ```bash
 # Run directly
 nix run github:supabase/postgres#supascan -- --help
 ```
 
 ### Development Environment
+
 ```bash
 git clone https://github.com/supabase/postgres
 cd postgres
@@ -78,6 +85,7 @@ nix develop
 ```
 
 This gives you access to:
+
 - `supascan` CLI
 - `goss` binary
 - Development tools
@@ -109,6 +117,7 @@ sudo supascan genspec --verbose --log-format json baseline.yml
 ```
 
 **Captures:**
+
 - All installed packages (with versions)
 - All systemd services (enabled/running state)
 - All kernel parameters (sysctl values)
@@ -144,6 +153,7 @@ supascan split baseline.yml --output-dir ./baselines
 ```
 
 **Creates separate files:**
+
 - `service.yml` - Systemd services
 - `user.yml` - User accounts
 - `group.yml` - Groups
@@ -180,7 +190,8 @@ sudo supascan validate --goss /usr/local/bin/goss /path/to/baselines
 
 **Validation Categories:**
 
-*Critical specs (must pass):*
+_Critical specs (must pass):_
+
 - `service.yml` - Service configuration
 - `user.yml` - User accounts
 - `group.yml` - Group memberships
@@ -191,13 +202,15 @@ sudo supascan validate --goss /usr/local/bin/goss /path/to/baselines
 - `files-postgres-config.yml` - Database configuration
 - `files-postgres-data.yml` - Database data permissions
 
-*Advisory specs (informational):*
+_Advisory specs (informational):_
+
 - `kernel-param.yml` - Kernel parameters
 - `files-etc.yml` - General configuration files
 - `files-systemd.yml` - Systemd units
 - `files-*.yml` - Other file categories
 
 **Exit Codes:**
+
 - `0` - All critical checks passed
 - `1` - One or more critical checks failed
 
@@ -213,23 +226,27 @@ sudo supascan validate --goss /usr/local/bin/goss /path/to/baselines
 ### Baseline-Driven Compliance
 
 1. **Generate baseline from golden machine:**
+
 ```bash
 ssh admin@golden-server
 sudo supascan genspec baseline.yml
 ```
 
 2. **Split into sections:**
+
 ```bash
 supascan split baseline.yml --output-dir ./baselines
 ```
 
 3. **Commit baselines to repo:**
+
 ```bash
 git add baselines/
 git commit -m "Add production baselines"
 ```
 
 4. **Validate other machines:**
+
 ```bash
 sudo supascan validate ./baselines
 ```
@@ -246,6 +263,7 @@ supascan validate /path/to/baselines
 ```
 
 Example output:
+
 ```
 ============================================================
 CRITICAL CHECKS (must pass)
@@ -317,6 +335,7 @@ disabledScanners:
 ```
 
 Use with:
+
 ```bash
 sudo supascan genspec --config config.yaml baseline.yml
 ```
@@ -326,6 +345,7 @@ sudo supascan genspec --config config.yaml baseline.yml
 The following are excluded by default to reduce noise:
 
 **Paths:**
+
 - Virtual filesystems: `/proc/*`, `/sys/*`, `/dev/*`, `/run/*`
 - Temporary: `/tmp/*`, `/var/tmp/*`
 - Caches: `/var/cache/*`, `*/.cache/*`
@@ -334,12 +354,14 @@ The following are excluded by default to reduce noise:
 - Shell history: `*/.bash_history`, `*/.zsh_history`
 
 **Shallow Directories:**
+
 - `/nix/store` - Nix store (scan top-level only)
 - `/data/pgdata` - PostgreSQL data
 - `/opt/saltstack` - Salt installation
 - `/usr/local/share`, `/usr/local/lib`
 
 **Kernel Parameters:**
+
 - Dynamic counters: `fs.dentry-state`, `fs.file-nr`, `kernel.random.*`
 - RAM-dependent: `fs.epoll.max_user_watches`, `net.netfilter.*`
 

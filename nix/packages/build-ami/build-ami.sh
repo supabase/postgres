@@ -123,12 +123,20 @@ common_packer_args=(
 # both templates require the same plugins, so one init covers both stages
 packer init -var-file "packer/$arch.vars.pkr.hcl" packer/stage1-nix.pkr.hcl
 
+if [[ -z ${SUPA_TRIPWIRE_URL:-} ]]; then
+	echo "::warning::SUPA_TRIPWIRE_URL is not set, building without supa-tripwire" >&2
+fi
+
 echo "::group::AMI Build: Stage 1"
 
-packer build "${common_packer_args[@]}" \
-	-var "ami_name=$ami_name-stage-1" \
-	-var "input-hash=$input_hash" \
-	packer/stage1-nix.pkr.hcl
+stage1_log=$(mktemp)
+for _ in 1 2 3; do
+	packer build "${common_packer_args[@]}" \
+		-var "ami_name=$ami_name-stage-1" \
+		-var "input-hash=$input_hash" \
+		packer/stage1-nix.pkr.hcl 2>&1 | tee "$stage1_log" && break
+	grep -q 'unexpected EOF' "$stage1_log" || exit 1
+done
 
 stage1_ami_id=$(find_ami "$postgres_release_version-stage1" "Name=tag:inputHash,Values=$input_hash")
 show_ami_info 1 "$stage1_ami_id" "$ami_name-stage-1"

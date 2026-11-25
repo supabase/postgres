@@ -1,0 +1,112 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: ["config:recommended", "security:only-security-updates"],
+
+  // Commits from this author don't count as edits.
+  // It is the checksum refresh workflow, which runs as the sb-postgres-bot app.
+  // Keep it in step with the email in .github/workflows/renovate-rehash.yml.
+  gitIgnoredAuthors: ["306028907+sb-postgres-bot[bot]@users.noreply.github.com"],
+
+  // Wait 7 days after a release before we open a PR for it.
+  // This gives upstream time to pull a bad release before we pick it up.
+  // Security fixes, multigres and our own projects skip the wait. See vulnerabilityAlerts and packageRules.
+  minimumReleaseAge: "7 days",
+  vulnerabilityAlerts: {
+    minimumReleaseAge: null,
+  },
+
+  customManagers: [
+    {
+      customType: "regex",
+      description: "Any .nix file. A '# renovate: datasource=... depName=... [packageName=...] [versioning=...] [extractVersion=...]' comment on the line above a 'name = \"value\";' line marks a dependency",
+      managerFilePatterns: ["/\\.nix$/"],
+      matchStrings: [
+        '# renovate: datasource=(?<datasource>\\S+) depName=(?<depName>\\S+)( packageName=(?<packageName>\\S+))?( versioning=(?<versioning>\\S+))?( extractVersion=(?<extractVersion>\\S+))?\\n\\s*\\w+ = "(?<currentValue>[^"]+)";',
+      ],
+    },
+    {
+      customType: "regex",
+      description: "Versions in ansible/vars.yml annotated with a '# renovate:' comment",
+      extractVersionTemplate: "^v?(?<version>.+)$",
+      managerFilePatterns: ["/^ansible/vars\\.yml$/"],
+      matchStrings: [
+        '# renovate: datasource=(?<datasource>\\S+) packageName=(?<packageName>\\S+)\\n(?<depName>\\w+)_release: "?(?<currentValue>[^"\\s#]+)"?',
+      ],
+    },
+    {
+      customType: "regex",
+      // We use regexManager instead of built-in nix manager because it would try to update all inputs.
+      datasourceTemplate: "git-refs",
+      depNameTemplate: "multigres",
+      description: "The pinned commit of the multigres flake input in flake.nix",
+      managerFilePatterns: ["/^flake\\.nix$/"],
+      matchStrings: [
+        'multigres\\.url = "github:multigres/multigres/(?<currentDigest>[0-9a-f]{40})";',
+      ],
+      packageNameTemplate: "https://github.com/multigres/multigres",
+    },
+  ],
+  packageRules: [
+    {
+      allowedVersions: "/^2\\./",
+      description: "Only the v2 line of the AWS CLI is installed",
+      matchDepNames: ["aws_cli"],
+      matchFileNames: ["ansible/vars.yml"],
+    },
+    {
+      allowedVersions: "/^2\\.8\\./",
+      description: "Kong download URLs are pinned to the gateway-28 (2.8.x) repo",
+      matchDepNames: ["kong"],
+      matchFileNames: ["ansible/vars.yml"],
+    },
+    {
+      allowedVersions: "/^3007\\./",
+      description: "Salt ships security releases in minor updates and does not do micro/patch. Stay on the 3007 major.",
+      enabled: true,
+      matchDepNames: ["salt"],
+      matchFileNames: ["ansible/vars.yml"],
+    },
+    {
+      description: "ansible/vars.yml artifacts: allow regular (non-security) updates. Checksums are refreshed by the `renovate-rehash` workflow",
+      enabled: true,
+      matchFileNames: ["ansible/vars.yml"],
+    },
+    {
+      description: "Our own projects: take their releases with no wait",
+      matchPackageNames: [
+        "supabase/auth",
+        "supabase/jit-db-gatekeeper",
+        "supabase/postgrest",
+        "supabase/supautils",
+      ],
+      minimumReleaseAge: null,
+    },
+    {
+      allowedVersions: "/^2\\./",
+      description: "wal-g-2 stays on the 2.x line. wal-g-3 is the 3.x line.",
+      matchDepNames: ["wal-g-2"],
+    },
+    {
+      allowedVersions: "/^3\\./",
+      description: "wal-g-3 stays on the 3.x line. wal-g-2 is the 2.x line.",
+      matchDepNames: ["wal-g-3"],
+    },
+    {
+      description: "Annotated dependencies in .nix files: allow regular updates. Source hashes are refreshed by the `renovate-rehash` workflow",
+      enabled: true,
+      matchFileNames: ["**/*.nix"],
+    },
+    {
+      description: "multigres flake input (flake.nix): allow regular updates with no wait. The pgctld vendorHash is refreshed by the `renovate-rehash` workflow",
+      enabled: true,
+      matchDepNames: ["multigres"],
+      matchManagers: ["custom.regex"],
+      minimumReleaseAge: null,
+    },
+    {
+      description: "GitHub Actions: regular updates (pins are tracked in .github/workflows/actions.lock)",
+      enabled: true,
+      matchManagers: ["github-actions"],
+    },
+  ],
+}

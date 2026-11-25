@@ -1,16 +1,16 @@
 resources:
-  - '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+  - "@type": type.googleapis.com/envoy.config.listener.v3.Listener
     name: http_listener
     address:
       socket_address:
-        address: '::'
+        address: "::"
         port_value: 80
         ipv4_compat: true
     filter_chains:
       - filters: &ref_1
           - name: envoy.filters.network.http_connection_manager
             typed_config:
-              '@type': >-
+              "@type": >-
                 type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
               common_http_protocol_options:
                 idle_timeout: 300s
@@ -25,17 +25,17 @@ resources:
                           default_value: 400
                           runtime_key: unused
                   typed_config:
-                    '@type': >-
+                    "@type": >-
                       type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
               generate_request_id: false
               http_filters:
                 - name: envoy.filters.http.cors
                   typed_config:
-                    '@type': >-
+                    "@type": >-
                       type.googleapis.com/envoy.extensions.filters.http.cors.v3.Cors
                 - name: envoy.filters.http.rbac
                   typed_config:
-                    '@type': >-
+                    "@type": >-
                       type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC
                     rules:
                       action: DENY
@@ -61,7 +61,7 @@ resources:
                                           exact: supabase_origin_protection_key
                 - name: envoy.filters.http.lua
                   typed_config:
-                    '@type': >-
+                    "@type": >-
                       type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
                     source_codes:
                       remove_apikey_and_empty_key_query_parameters:
@@ -82,7 +82,7 @@ resources:
                           end
                 - name: envoy.filters.http.compressor.brotli
                   typed_config:
-                    '@type': >-
+                    "@type": >-
                       type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
                     response_direction_config:
                       common_config:
@@ -113,11 +113,11 @@ resources:
                     compressor_library:
                       name: text_optimized
                       typed_config:
-                        '@type': >-
+                        "@type": >-
                           type.googleapis.com/envoy.extensions.compression.brotli.compressor.v3.Brotli
                 - name: envoy.filters.http.compressor.gzip
                   typed_config:
-                    '@type': >-
+                    "@type": >-
                       type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
                     response_direction_config:
                       common_config:
@@ -148,11 +148,11 @@ resources:
                     compressor_library:
                       name: text_optimized
                       typed_config:
-                        '@type': >-
+                        "@type": >-
                           type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
                 - name: envoy.filters.http.router
                   typed_config:
-                    '@type': >-
+                    "@type": >-
                       type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                     dynamic_stats: false
               local_reply_config:
@@ -167,7 +167,7 @@ resources:
                                   runtime_key: unused
                           - header_filter:
                               header:
-                                name: ':path'
+                                name: ":path"
                                 string_match:
                                   prefix: /customer/v1/privileged/
                     status_code: 401
@@ -187,7 +187,7 @@ resources:
                                   runtime_key: unused
                           - header_filter:
                               header:
-                                name: ':path'
+                                name: ":path"
                                 string_match:
                                   prefix: /metrics/aggregated
                                 invert_match: true
@@ -195,14 +195,14 @@ resources:
                     headers_to_add:
                       - header:
                           key: x-sb-error-code
-                          value: '%RESPONSE_CODE_DETAILS%'
+                          value: "%RESPONSE_CODE_DETAILS%"
                     body_format_override:
                       json_format:
                         message: >-
                           `apikey` request header or query parameter is either
                           missing or invalid. Double check your Supabase `anon`
                           or `service_role` API key.
-                        hint: '%RESPONSE_CODE_DETAILS%'
+                        hint: "%RESPONSE_CODE_DETAILS%"
                       json_format_options:
                         sort_properties: false
               merge_slashes: true
@@ -211,17 +211,17 @@ resources:
                 virtual_hosts:
                   - name: virtual_host_0
                     domains:
-                      - '*'
+                      - "*"
                     typed_per_filter_config:
                       envoy.filters.http.cors:
-                        '@type': >-
+                        "@type": >-
                           type.googleapis.com/envoy.extensions.filters.http.cors.v3.CorsPolicy
                         allow_origin_string_match:
                           - safe_regex:
                               regex: \*
                         allow_methods: GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS,TRACE,CONNECT
                         allow_headers: apikey,authorization,x-client-info
-                        max_age: '3600'
+                        max_age: "3600"
                     routes:
                       - match:
                           path: /health
@@ -231,7 +231,7 @@ resources:
                             inline_string: Healthy
                         typed_per_filter_config: &ref_0
                           envoy.filters.http.rbac:
-                            '@type': >-
+                            "@type": >-
                               type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBACPerRoute
                       - match:
                           safe_regex:
@@ -247,7 +247,7 @@ resources:
                           regex_rewrite:
                             pattern:
                               regex: ^/auth/v1
-                            substitution: ''
+                            substitution: ""
                           retry_policy:
                             num_retries: 3
                             retry_on: 5xx
@@ -282,7 +282,7 @@ resources:
                           timeout: 125s
                         typed_per_filter_config:
                           envoy.filters.http.lua:
-                            '@type': >-
+                            "@type": >-
                               type.googleapis.com/envoy.extensions.filters.http.lua.v3.LuaPerRoute
                             name: remove_apikey_and_empty_key_query_parameters
                       - match:
@@ -296,7 +296,7 @@ resources:
                           timeout: 125s
                         typed_per_filter_config:
                           envoy.filters.http.lua:
-                            '@type': >-
+                            "@type": >-
                               type.googleapis.com/envoy.extensions.filters.http.lua.v3.LuaPerRoute
                             name: remove_empty_key_query_parameters
                       - match:
@@ -312,7 +312,7 @@ resources:
                           prefix_rewrite: /
                         typed_per_filter_config:
                           envoy.filters.http.lua:
-                            '@type': >-
+                            "@type": >-
                               type.googleapis.com/envoy.extensions.filters.http.lua.v3.LuaPerRoute
                             name: remove_apikey_and_empty_key_query_parameters
                       - match:
@@ -360,7 +360,7 @@ resources:
                           prefix_rewrite: /supabase-internal/metrics
                         typed_per_filter_config:
                           envoy.filters.http.rbac:
-                            '@type': >-
+                            "@type": >-
                               type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBACPerRoute
                             rbac:
                               rules:
@@ -382,11 +382,11 @@ resources:
                         max_interval: 1s
                       retry_on: gateway-error
               stat_prefix: ingress_http
-  - '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+  - "@type": type.googleapis.com/envoy.config.listener.v3.Listener
     name: https_listener
     address:
       socket_address:
-        address: '::'
+        address: "::"
         port_value: 443
         ipv4_compat: true
     filter_chains:
@@ -394,13 +394,12 @@ resources:
         transport_socket:
           name: envoy.transport_sockets.tls
           typed_config:
-            '@type': >-
+            "@type": >-
               type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
             common_tls_context:
-              alpn_protocols: [ "h2,http/1.1" ]
+              alpn_protocols: ["h2,http/1.1"]
               tls_certificates:
                 - certificate_chain:
                     filename: /etc/envoy/fullChain.pem
                   private_key:
                     filename: /etc/envoy/privKey.pem
-

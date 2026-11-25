@@ -1,0 +1,99 @@
+name: Renovate Rehash
+
+# Renovate bumps a version but cannot work out the new checksum or hash.
+# This workflow refreshes the hashes and checksums for the files the PR changed.
+# It runs `nix run .#rehash`, which decides what to run for each file.
+# It only starts for changes to ansible/vars.yml, flake.nix or a .nix file under nix/.
+# The job below skips any PR that Renovate did not open.
+# We assume every Renovate PR is a dependency update.
+# It pushes what that command changes to the PR branch.
+#
+# The Mend-hosted Renovate app cannot do this itself.
+# It only allows a short fixed list of post-upgrade commands.
+# If we run our own Renovate later, postUpgradeTasks could do this job and this workflow could go away.
+#
+# It pushes with a GitHub App token.
+# A push made with GITHUB_TOKEN does not start CI.
+# The app token is only created when there is something to push.
+#
+# The commit author is listed in gitIgnoredAuthors in renovate.json5.
+# Renovate treats a PR as edited when someone else adds a commit to its branch.
+# When that happens, Renovate stops rebasing the PR and stops updating its version.
+# Listing the author tells Renovate to ignore our commits, so the PR keeps updating.
+#
+# Renovate force-pushes over our commit whenever it rebases.
+# That starts this workflow again, and it adds the commit back.
+
+on:
+  pull_request:
+    paths:
+      - ansible/vars.yml
+      - flake.nix
+      - nix/**.nix
+
+concurrency:
+  group: renovate-rehash-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  rehash:
+    if: >-
+      github.event.pull_request.user.login == 'renovate[bot]' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: blacksmith-2vcpu-ubuntu-2404
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          # The app token is added at push time, only if we need it.
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: $/.github/actions/install-nix
+
+      - name: Rehash
+        id: rehash
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          set -euo pipefail
+
+          readarray -t files < <(git diff --name-only "origin/$BASE_REF...HEAD")
+          nix run .#rehash -- "${files[@]}"
+
+          if git diff --quiet; then
+            echo "Nothing to rehash."
+            echo "changed=false" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # This is the identity of the GitHub App that creates the push token below.
+          # GitHub shows the commit as coming from the app.
+          # The email must match gitIgnoredAuthors in renovate.json5.
+          git config user.name "sb-postgres-bot[bot]"
+          git config user.email "306028907+sb-postgres-bot[bot]@users.noreply.github.com"
+          git add --update
+          git commit -m "Refresh hashes and checksums for Renovate update"
+          echo "changed=true" >>"$GITHUB_OUTPUT"
+
+      - name: Generate app token
+        if: steps.rehash.outputs.changed == 'true'
+        id: app-token
+        uses: actions/create-github-app-token@v3.3.0
+        with:
+          client-id: ${{ secrets.UPDATE_APP_ID }}
+          private-key: ${{ secrets.UPDATE_APP_PRIVATE_KEY }}
+          permission-contents: write
+
+      - name: Push rehashed files
+        if: steps.rehash.outputs.changed == 'true'
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          git push "https://x-access-token:$APP_TOKEN@github.com/$REPOSITORY.git" "HEAD:$HEAD_REF"

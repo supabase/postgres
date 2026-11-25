@@ -8,13 +8,13 @@ file:
     filetype: directory
     owner: root
     group: root
-    mode: '0755'
+    mode: "0755"
   /etc/fail2ban/jail.local:
     exists: true
     filetype: file
     owner: root
     group: root
-    mode: '0644'
+    mode: "0644"
 
   # AppArmor
   /etc/apparmor.d:
@@ -22,7 +22,7 @@ file:
     filetype: directory
     owner: root
     group: root
-    mode: '0755'
+    mode: "0755"
 
   # UFW firewall
   /etc/ufw:
@@ -30,13 +30,13 @@ file:
     filetype: directory
     owner: root
     group: root
-    mode: '0755'
+    mode: "0755"
   /etc/ufw/ufw.conf:
     exists: true
     filetype: file
     owner: root
     group: root
-    mode: '0644'
+    mode: "0644"
 
   # SSH configuration
   /etc/ssh/sshd_config:
@@ -44,7 +44,7 @@ file:
     filetype: file
     owner: root
     group: root
-    mode: '0644'
+    mode: "0644"
 
   # PAM configuration
   /etc/pam.d:
@@ -52,7 +52,7 @@ file:
     filetype: directory
     owner: root
     group: root
-    mode: '0755'
+    mode: "0755"
 
   # Sudoers
   /etc/sudoers:
@@ -60,13 +60,13 @@ file:
     filetype: file
     owner: root
     group: root
-    mode: '0440'
+    mode: "0440"
   /etc/sudoers.d:
     exists: true
     filetype: directory
     owner: root
     group: root
-    mode: '0750'
+    mode: "0750"
 
   # Security limits
   /etc/security/limits.conf:
@@ -74,4 +74,4 @@ file:
     filetype: file
     owner: root
     group: root
-    mode: '0644'
+    mode: "0644"

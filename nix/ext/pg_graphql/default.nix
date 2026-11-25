@@ -130,7 +130,7 @@ let
     lib.mapAttrs (name: value: build name value.hash value.rust value.pgrx) versionsToUse
   );
 in
-(buildEnv {
+buildEnv {
   name = pname;
   paths = packages;
   nativeBuildInputs = [ makeWrapper ];
@@ -194,7 +194,4 @@ in
       else
         "multi-" + lib.concatStringsSep "-" (map (v: lib.replaceStrings [ "." ] [ "-" ] v) versions);
   };
-}).overrideAttrs
-  (_: {
-    requiredSystemFeatures = [ "big-parallel" ];
-  })
+}

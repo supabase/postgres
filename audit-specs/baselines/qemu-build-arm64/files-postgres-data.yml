@@ -8,7 +8,7 @@ file:
     filetype: directory
     owner: postgres
     group: postgres
-    mode: '0755'
+    mode: "0755"
   # Note: /var/lib/postgresql/data is a symlink during AMI build (points to /data/...)
   # The actual data directory is created at deploy time
   /var/lib/postgresql/data:
@@ -16,4 +16,4 @@ file:
     filetype: symlink
     owner: root
     group: root
-    mode: '0777'
+    mode: "0777"

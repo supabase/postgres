@@ -1,9 +1,9 @@
 diff --git a/src/extension_custom_scripts.c b/src/extension_custom_scripts.c
-index 337bd69..3f285cc 100644
+index ef48bfc..3bf65d7 100644
 --- a/src/extension_custom_scripts.c
 +++ b/src/extension_custom_scripts.c
-@@ -2,6 +2,22 @@
- #include <errno.h>
+@@ -3,6 +3,22 @@
+ #include <storage/fd.h>
  #include <sys/stat.h>
  
 +#if defined(__linux__) && defined(__GLIBC__) && (defined(__x86_64__) || defined(__aarch64__))
@@ -22,6 +22,6 @@ index 337bd69..3f285cc 100644
 +#define stat64(path, buf) __xstat(SUPAUTILS_STAT_VER, path, buf)
 +#endif
 +
- // Prevent recursively running custom scripts
- static bool running_custom_script = false;
- 
+ /*
+  * A list of extension names which are currently under creation.
+  * Used to detect cyclic dependencies between extensions via

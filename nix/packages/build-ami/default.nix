@@ -19,7 +19,7 @@ let
       fileset = lib.fileset.unions [
         (root + "/ansible")
         (root + "/audit-specs")
-        (root + "/migrations")
+        (root + "/migrations/db")
         (root + "/packer")
       ];
     };

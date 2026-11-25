@@ -29,7 +29,7 @@
     src: files/adminapi.sudoers.conf
     dest: /etc/sudoers.d/adminapi
     mode: "0440"
-    validate: 'visudo -cf %s'
+    validate: "visudo -cf %s"
 
 - name: perms for adminapi
   shell: |
@@ -48,6 +48,13 @@
     src: /tmp/adminapi.tar.gz
     dest: /opt
     owner: adminapi
+
+- name: adminapi - binary ownership
+  file:
+    path: /opt/supabase-admin-api
+    owner: adminapi
+    group: root
+    mode: "0755"
 
 - name: adminapi - config dir
   file:

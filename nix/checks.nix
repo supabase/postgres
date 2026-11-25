@@ -19,6 +19,8 @@
         url = "https://raw.githubusercontent.com/Zordrak/bashlog/master/log.sh";
         sha256 = "1vrjcbzls0ba2qkg7ffddz2gxqn2rlj3wyvril2gz0mfi89y9vk9";
       };
+
+      inherit (self'.packages) getkey-script;
     in
     {
       checks =
@@ -36,46 +38,6 @@
               isOrioleDB = lib.strings.hasPrefix "orioledb-" pgpkg.version;
               pg_prove = pkgs.perlPackages.TAPParserSourceHandlerpgTAP;
               inherit (self'.packages) pg_regress pg_isolation_regress;
-              getkey-script = pkgs.stdenv.mkDerivation {
-                name = "pgsodium-getkey";
-                buildCommand = ''
-                  mkdir -p $out/bin
-                  cat > $out/bin/pgsodium-getkey << 'EOF'
-                  #!${pkgs.bash}/bin/bash
-                  set -euo pipefail
-
-                  TMPDIR_BASE=$(mktemp -d)
-
-                  KEY_DIR="''${PGSODIUM_KEY_DIR:-$TMPDIR_BASE/pgsodium}"
-                  KEY_FILE="$KEY_DIR/pgsodium.key"
-
-                  if ! mkdir -p "$KEY_DIR" 2>/dev/null; then
-                    echo "Error: Could not create key directory $KEY_DIR" >&2
-                    exit 1
-                  fi
-                  chmod 1777 "$KEY_DIR"
-
-                  if [[ ! -f "$KEY_FILE" ]]; then
-                    if ! (dd if=/dev/urandom bs=32 count=1 2>/dev/null | od -A n -t x1 | tr -d ' \n' > "$KEY_FILE"); then
-                      if ! (openssl rand -hex 32 > "$KEY_FILE"); then
-                        echo "00000000000000000000000000000000" > "$KEY_FILE"
-                        echo "Warning: Using fallback key" >&2
-                      fi
-                    fi
-                    chmod 644 "$KEY_FILE"
-                  fi
-
-                  if [[ -f "$KEY_FILE" && -r "$KEY_FILE" ]]; then
-                    cat "$KEY_FILE"
-                  else
-                    echo "Error: Cannot read key file $KEY_FILE" >&2
-                    exit 1
-                  fi
-                  EOF
-                  chmod +x $out/bin/pgsodium-getkey
-                '';
-              };
-
               pgroonga = self'.legacyPackages."psql_${pgpkg.version}".exts.pgroonga;
               supautils = self'.legacyPackages."psql_${pgpkg.version}".exts.supautils;
 
@@ -145,9 +107,22 @@
                 };
               };
 
-              # Tests to skip for OrioleDB (not compatible with OrioleDB storage)
+              # Tests to skip for OrioleDB.
               orioleDBSkipTests = [
                 "index_advisor" # index_advisor doesn't support OrioleDB tables
+
+                # OrioleDB still uses PostgreSQL 17.11.
+                # drop these skips when it includes the 17.12 fixes.
+                "alter_column_type_rowtype_deps"
+                "bpchar_btree_dedup"
+                "cast_function_execute_privilege"
+                "drop_owned_rls_policy"
+                "function_def_target_alias"
+                "jsonpath_gin_lookup"
+                "partition_prune_range"
+                "to_char_v_overflow"
+                "upsert_rls_conflict_where"
+                "upsert_view_visibility"
               ];
 
               # Helper function to filter SQL files based on version
@@ -225,6 +200,7 @@
                 "output_plugin_libraries" # needs wal_level=logical + logical-decoding infra, not exercised in the CLI variant
                 "btree_gist_nan" # needs btree_gist, not in the CLI prime file
                 "hstore_copy_binary" # needs hstore
+                "bpchar_btree_dedup" # needs pageinspect, not in the CLI prime file
                 "pgrst_watch_triggers" # needs dblink, not in the CLI prime file
                 # Version-specific extension tests
                 "z_17_ext_interface"
@@ -580,8 +556,18 @@
                   log info "CLI variant detected - skipping migrations tests"
                 else
                   log info "Running migrations tests"
-                  log_cmd pg_prove -p ${pgPort} -U supabase_admin -h localhost -d postgres -v ${../migrations/tests}/test.sql
+                  if ! log_cmd pg_prove -p ${pgPort} -U supabase_admin -h localhost -d postgres -v ${../migrations/tests}/test.sql; then
+                    log error "Migrations tests failed"
+                    exit 1
+                  fi
                   log info "Migrations tests completed successfully"
+
+                  log info "Running smoke tests"
+                  if ! log_cmd pg_prove -p ${pgPort} -U supabase_admin -h localhost -d postgres -v ${./tests/smoke}/*.sql; then
+                    log error "Smoke tests failed"
+                    exit 1
+                  fi
+                  log info "Smoke tests completed successfully"
                 fi
               '';
             };
@@ -940,6 +926,11 @@
             wal-g-3
             ;
           devShell = self'.devShells.default;
+        }
+        // pkgs.lib.optionalAttrs (pkgs.stdenv.hostPlatform.system == "x86_64-linux") {
+          schema-15 = self'.packages.schema-check-15;
+          schema-17 = self'.packages.schema-check-17;
+          schema-orioledb-17 = self'.packages.schema-check-orioledb-17;
         }
         // pkgs.lib.optionalAttrs pkgs.stdenv.isLinux (
           import ./ext/tests {

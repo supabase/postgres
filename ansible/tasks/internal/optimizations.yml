@@ -2,7 +2,7 @@
   when: stage2
   systemd:
     enabled: no
-    name: '{{ item }}'
+    name: "{{ item }}"
     state: stopped
   with_items:
     - postgresql

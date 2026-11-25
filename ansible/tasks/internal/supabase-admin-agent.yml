@@ -25,6 +25,7 @@
     path: /etc/salt/gpgkeys
     owner: root
     group: salt
+    mode: "0700"
     state: directory
 
 - name: give supabase-admin-agent user permissions
@@ -79,6 +80,12 @@
     owner: supabase-admin-agent
     extra_opts:
       - --strip-components=1
+
+- name: supabase-admin-agent - binary ownership
+  ansible.builtin.file:
+    path: "/opt/supabase-admin-agent/supabase-admin-agent-linux-{{ platform }}"
+    owner: supabase-admin-agent
+    group: supabase-admin-agent
 
 - name: supabase-admin-agent - create symlink
   ansible.builtin.file:

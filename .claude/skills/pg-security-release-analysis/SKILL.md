@@ -107,6 +107,7 @@ Walk every class for every release. Detection commands assume `git -C /tmp/postg
 **What it looks like**: new `superuser()` checks, new `pg_*_aclcheck` / `object_aclcheck` calls, default role privilege changes.
 
 **Detection**:
+
 ```bash
 git log <range> --oneline -- src/backend/commands/ src/backend/catalog/ | grep -iE 'privilege|aclcheck|superuser'
 git log <range> -p -- src/backend/commands/ | grep -nE '^\+.*\b(superuser\(\)|pg_proc_aclcheck|object_aclcheck)' | head -40
@@ -121,6 +122,7 @@ git log <range> -p -- src/backend/commands/ | grep -nE '^\+.*\b(superuser\(\)|pg
 **What it looks like**: multibyte / locale / collation / case-folding fixes, comparison function fixes, index correctness fixes (GiST / GIN / B-tree / BRIN). Failures are typically SILENT — wrong query results, not errors.
 
 **Detection**:
+
 ```bash
 git log <range> --oneline -- src/backend/utils/ src/backend/access/ contrib/ | grep -iE 'multibyte|collation|locale|case[- ]?fold|comparison|overflow|truncat'
 git log <range> --oneline -- contrib/ | grep -iE 'fix|wrong|incorrect' | grep -viE 'test|comment|typo|docs?|format'
@@ -135,6 +137,7 @@ git log <range> --oneline -- contrib/ | grep -iE 'fix|wrong|incorrect' | grep -v
 **What it looks like**: `palloc` / `alloc` overflow fixes, bounds-check additions, length validation in parsers.
 
 **Detection**:
+
 ```bash
 git log <range> --oneline | grep -iE 'overflow|palloc|bound|overrun|MaxAllocSize|integer overflow'
 git log <range> --oneline -- src/backend/utils/mb/ src/backend/utils/adt/ | grep -iE 'overflow|length'
@@ -147,6 +150,7 @@ git log <range> --oneline -- src/backend/utils/mb/ src/backend/utils/adt/ | grep
 **What it looks like**: fixes in `pg_dump` output formatting, dynamic SQL inside contrib modules, identifier quoting bugs.
 
 **Detection**:
+
 ```bash
 git log <range> --oneline | grep -iE 'quot|escape|inject|sql.+inject'
 git log <range> --oneline -- src/bin/pg_dump/ contrib/ | grep -iE 'quot|escape'
@@ -161,11 +165,13 @@ git log <range> --oneline -- src/bin/pg_dump/ contrib/ | grep -iE 'quot|escape'
 **What it looks like**: bug fixes in `pg_basebackup`, `pg_rewind`, `pg_dump`, `pg_restore`, `pg_upgrade`, `pg_createsubscriber`, `pg_verifybackup`, `pg_combinebackup`, `libpq`, `psql`, `ecpg`.
 
 **Detection**:
+
 ```bash
 git log <range> --oneline -- src/bin/ src/interfaces/libpq/
 ```
 
 **Supabase impact questions**: Which Supabase services use this binary?
+
 - `pg_basebackup` → wal-g PITR pipeline
 - `libpq` → bundled in AMI, used by psql / pgbouncer / PostgREST / GoTrue connection paths
 - `pg_dump` / `pg_restore` → dashboard "Clone Project" flow, logical backups
@@ -181,6 +187,7 @@ For each binary, also check: does Supabase pin the version, or does it pick up w
 **What it looks like**: changes to struct layouts, enum value ordering, function signatures, or header definitions in `src/include/`.
 
 **Detection**:
+
 ```bash
 git log <range> --oneline -- src/include/ | head -40
 git diff <pg17_from>..<pg17_to> -- src/include/ | grep -E '^-[^-].*\b(struct|enum|typedef|extern)' | head -40
@@ -196,6 +203,7 @@ git log <range> --oneline | grep -iE 'ABI|API|signature|enum.+order'
 **What it looks like**: planner optimization fixes, statistics gathering changes, selectivity estimator updates, cost-estimation fixes, memoization fixes.
 
 **Detection**:
+
 ```bash
 git log <range> --oneline -- src/backend/optimizer/ src/backend/utils/adt/selfuncs.c src/backend/statistics/ | head -40
 git log <range> --oneline -- contrib/ | grep -iE 'selectivity|estimate|stat|plan'
@@ -210,6 +218,7 @@ git log <range> --oneline -- contrib/ | grep -iE 'selectivity|estimate|stat|plan
 **What it looks like**: changes to default GUC values, `postgresql.conf.sample`, parameter renames, deprecations.
 
 **Detection**:
+
 ```bash
 git log <range> --oneline -- src/backend/utils/misc/postgresql.conf.sample src/backend/utils/misc/guc_tables.c
 git diff <range> -- src/backend/utils/misc/postgresql.conf.sample | head -100
@@ -223,12 +232,14 @@ git log <range> --oneline | grep -iE 'default.+value|GUC|setting'
 **What it looks like**: walsender / walreceiver fixes, logical replication (subscriptions, publications, slotsync), WAL format changes, recovery / checkpoint fixes, FSM/VM persistence.
 
 **Detection**:
+
 ```bash
 git log <range> --oneline -- src/backend/replication/ src/backend/access/transam/ | head -40
 git log <range> --oneline | grep -iE 'walsender|walreceiver|slotsync|publication|subscription|recovery|checkpoint|WAL'
 ```
 
 **Supabase impact questions**:
+
 - Realtime depends on logical replication (`pgoutput` decoder + publications). Any change to publication catalog, REFRESH PUBLICATION, or decoding behavior?
 - wal-g depends on physical replication / WAL streaming. Any change to WAL format or basebackup?
 - Read replicas (where Supabase offers them) depend on streaming replication.
@@ -241,6 +252,7 @@ git log <range> --oneline | grep -iE 'walsender|walreceiver|slotsync|publication
 **What it looks like**: SCRAM / GSS / SSL handshake fixes, certificate handling, password hashing (MD5, SCRAM-SHA-256), timing-safe comparisons.
 
 **Detection**:
+
 ```bash
 git log <range> --oneline -- src/backend/libpq/ src/backend/utils/adt/cryptohashes.c | head -40
 git log <range> --oneline | grep -iE 'SCRAM|GSS|SSL|TLS|password|hash|cert|auth'
@@ -255,6 +267,7 @@ git log <range> --oneline | grep -iE 'SCRAM|GSS|SSL|TLS|password|hash|cert|auth'
 **What it looks like**: any commit under `contrib/<name>/` for extensions Supabase preloads or default-installs, OR any of the Supabase-shipped extensions in `nix/ext/` getting upstream updates.
 
 **Detection**:
+
 ```bash
 # Look at every contrib extension we ship
 for ext in pgcrypto pg_stat_statements pgaudit pg_cron pg_net pgsodium pg_graphql pg_tle plan_filter supabase_vault auto_explain plpgsql plpgsql_check timescaledb intarray ltree hstore citext refint xml2 amcheck pgvector pg_trgm postgres_fdw; do

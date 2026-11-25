@@ -11,7 +11,7 @@
     flake-utils.url = "github:numtide/flake-utils";
     git-hooks.inputs.nixpkgs.follows = "nixpkgs";
     git-hooks.url = "github:cachix/git-hooks.nix";
-    multigres.url = "github:multigres/multigres";
+    multigres.url = "github:multigres/multigres/08b06091344a58f15c48c87f19e4aac85c43ee06"; # commit is updated by renovate
     multigres.flake = false;
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
     nix-darwin.url = "github:nix-darwin/nix-darwin";
@@ -26,6 +26,10 @@
     # Pin to a specific nixpkgs version that has compatible v8 and curl versions
     # for extensions that require older package versions
     nixpkgs-oldstable.url = "github:NixOS/nixpkgs/a76c4553d7e741e17f289224eda135423de0491d";
+    nixpkgs-oldstable.flake = false;
+    # Older clang and glibc for building extensions on old pgrx versions (before 0.11.3)
+    nixpkgs-2211.url = "https://channels.nixos.org/nixos-22.11/nixexprs.tar.xz";
+    nixpkgs-2211.flake = false;
     nixpkgs.url = "https://channels.nixos.org/nixos-unstable/nixexprs.tar.xz";
     rust-overlay.inputs.nixpkgs.follows = "nixpkgs";
     rust-overlay.url = "github:oxalica/rust-overlay";

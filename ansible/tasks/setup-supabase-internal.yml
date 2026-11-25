@@ -44,22 +44,22 @@
 
 - name: create service files for Vector
   ansible.builtin.template:
-    src: 'files/vector.service.j2'
-    dest: '/etc/systemd/system/vector.service'
+    src: "files/vector.service.j2"
+    dest: "/etc/systemd/system/vector.service"
 
 - name: configure tmpfiles for postgres - overwrites upstream package
   ansible.builtin.template:
-    src: 'files/postgresql_config/tmpfiles.postgresql.conf'
-    dest: '/etc/tmpfiles.d/postgresql-common.conf'
+    src: "files/postgresql_config/tmpfiles.postgresql.conf"
+    dest: "/etc/tmpfiles.d/postgresql-common.conf"
 
 - name: fix permissions for vector config to be managed
   ansible.builtin.file:
-    group: 'vector'
-    mode: '0775'
-    owner: 'vector'
-    path: '/etc/vector'
+    group: "vector"
+    mode: "0775"
+    owner: "vector"
+    path: "/etc/vector"
     recurse: true
-    state: 'directory'
+    state: "directory"
 
 - name: vector - reload systemd
   ansible.builtin.systemd_service:
@@ -67,21 +67,21 @@
 
 - name: Create checkpoints dir
   ansible.builtin.file:
-    owner: 'vector'
-    path: '/var/lib/vector'
-    state: 'directory'
+    owner: "vector"
+    path: "/var/lib/vector"
+    state: "directory"
   become: true
 
 - name: Include file for generated optimizations in postgresql.conf
   ansible.builtin.replace:
-    path: '/etc/postgresql/postgresql.conf'
+    path: "/etc/postgresql/postgresql.conf"
     regexp: "#include = '/etc/postgresql-custom/generated-optimizations.conf'"
     replace: "include = '/etc/postgresql-custom/generated-optimizations.conf'"
   become: true
 
 - name: Include file for custom overrides in postgresql.conf
   ansible.builtin.replace:
-    path: '/etc/postgresql/postgresql.conf'
+    path: "/etc/postgresql/postgresql.conf"
     regexp: "#include = '/etc/postgresql-custom/custom-overrides.conf'"
     replace: "include = '/etc/postgresql-custom/custom-overrides.conf'"
   become: true
@@ -93,6 +93,11 @@
 - name: Install admin-mgr
   ansible.builtin.import_tasks:
     file: internal/admin-mgr.yml
+
+- name: Install supa-tripwire
+  ansible.builtin.import_tasks:
+    file: internal/supa-tripwire.yml
+  when: lookup('ansible.builtin.env', 'SUPA_TRIPWIRE_URL') | length > 0
 
 - name: Install adminapi
   ansible.builtin.import_tasks:
