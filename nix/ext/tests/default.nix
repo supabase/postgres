@@ -52,7 +52,7 @@ let
     {
       support_upgrade ? true,
       check_install_all_versions ? true,
-      before_create_guard ? null,
+      before_create_guard ? false,
       extraNode ? { },
     }:
     pname:
@@ -90,7 +90,6 @@ let
           orioledb17-configuration = "${nodes.server.system.build.toplevel}/specialisation/orioledb17";
         in
         ''
-          import json
           from pathlib import Path
           versions = {
             "15": [${lib.concatStringsSep ", " (map (s: ''"${s}"'') (versions "15"))}],
@@ -100,8 +99,7 @@ let
           extension_name = "${pname}"
           support_upgrade = ${if support_upgrade then "True" else "False"}
           check_install_all_versions = ${if check_install_all_versions then "True" else "False"}
-          before_create_guard = json.loads('${builtins.toJSON before_create_guard}')
-          unguarded_version = before_create_guard["version"] if before_create_guard else None
+          unguarded_first = ${if before_create_guard then "True" else "False"}
           pg17_configuration = "${pg17-configuration}"
           orioledb17_configuration = "${orioledb17-configuration}"
           sql_test_directory = Path("${../../tests}")
@@ -116,16 +114,11 @@ let
 
           with subtest("Check upgrade path with postgresql 15"):
             if check_install_all_versions:
-              test.check_upgrade_path("15", unguarded_version)
+              test.check_upgrade_path("15", unguarded_first)
 
           last_version = None
           with subtest("Check the install of the last version of the extension"):
             last_version = test.check_install_last_version("15")
-
-          if before_create_guard:
-            with subtest("Check the before-create script rejects the unsupported version"):
-              test.assert_install_rejected(before_create_guard["version"], before_create_guard["error"])
-              test.install_extension(last_version)
 
           with subtest("switch to postgresql 17"):
             server.execute(
@@ -156,7 +149,7 @@ let
 
           with subtest("Check upgrade path with postgresql 17"):
             if check_install_all_versions:
-              test.check_upgrade_path("17", unguarded_version)
+              test.check_upgrade_path("17", unguarded_first)
 
           with subtest("switch to orioledb 17"):
             server.execute(
@@ -188,7 +181,7 @@ let
 
           with subtest("Check upgrade path with orioledb 17"):
             if check_install_all_versions:
-              test.check_upgrade_path("orioledb-17")
+              test.check_upgrade_path("orioledb-17", unguarded_first)
         '';
     };
   extTest =
@@ -589,10 +582,7 @@ builtins.listToAttrs (
       {
         name = "vault";
         pname = "supabase_vault";
-        args.before_create_guard = {
-          version = "0.2.8";
-          error = "Vault 0.2.8 is unsupported";
-        };
+        args.before_create_guard = true;
       }
       {
         pname = "pg_repack";

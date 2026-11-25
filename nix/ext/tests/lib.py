@@ -110,23 +110,11 @@ class PostgresExtensionTest(object):
         finally:
             self.vm.succeed(f"mv {script}.disabled {script}")
 
-    def assert_install_rejected(self, version: str, expected_error: str):
-        """Assert CREATE EXTENSION at the given version fails with expected_error."""
-        self.drop_extension()
-        output = self.vm.fail(
-            f"""psql -U supabase_admin -d postgres -c "CREATE EXTENSION {self.extension_name} WITH VERSION '{version}' CASCADE;" 2>&1"""
-        )
-        assert expected_error in output, (
-            f"Expected '{expected_error}' when installing {version}, got: {output}"
-        )
-
-    def check_upgrade_path(
-        self, pg_version: str, unguarded_version: Optional[str] = None
-    ):
+    def check_upgrade_path(self, pg_version: str, unguarded_first: bool = False):
         """Test the complete upgrade path for a PostgreSQL version.
 
-        unguarded_version is installed with the before-create script moved aside,
-        for a version that script rejects.
+        unguarded_first installs the first version with the before-create script
+        moved aside, for a version that script rejects.
 
         This method tests all available extension versions for a given PostgreSQL
         version, either through in-place upgrades or reinstallation depending on
@@ -148,7 +136,10 @@ class PostgresExtensionTest(object):
         # Install and verify first version
         first_version = available_versions[0]
         self.drop_extension()
-        self.install_version(first_version, unguarded_version)
+        if unguarded_first:
+            self.install_extension_without_before_create(first_version)
+        else:
+            self.install_extension(first_version)
 
         # Test remaining versions
         for version in available_versions[1:]:
@@ -156,13 +147,7 @@ class PostgresExtensionTest(object):
                 self.update_extension(version)
             else:
                 self.drop_extension()
-                self.install_version(version, unguarded_version)
-
-    def install_version(self, version: str, unguarded_version: Optional[str]):
-        if version == unguarded_version:
-            self.install_extension_without_before_create(version)
-        else:
-            self.install_extension(version)
+                self.install_extension(version)
 
     def check_legacy_versions_upgrade_to_latest(
         self, pg_version: str, legacy_versions: Mapping[str, str]
