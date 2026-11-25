@@ -1161,6 +1161,86 @@ def test_postgrest_read_only_session_attrs(host):
             print("Warning: Failed to restore PostgreSQL configuration")
 
 
+def test_supabase_monitor_admin_role_is_passwordless_and_reachable_on_loopback(host):
+    """supabase_monitor_admin (migrations/db/migrations/20261113000000_supabase_monitor_admin.sql)
+    has no password, so it can only log in over loopback (pg_hba.conf trust).
+
+    Never give it a password in nix/tools/postgresql_schema.sql or the fixture
+    at the top of this file.
+    """
+    ssh = host["ssh"]
+    psql_admin = (
+        "sudo -u postgres psql -U supabase_admin -h localhost -d postgres -At -c "
+    )
+
+    result = run_ssh_command(
+        ssh,
+        psql_admin + '"select a.rolcanlogin, a.rolpassword is null, a.rolbypassrls, '
+        "a.rolsuper, a.rolcreaterole, a.rolcreatedb, a.rolreplication, "
+        "r.rolconfig @> array['role=supabase_monitor_admin', "
+        "'auto_explain.log_min_duration=-1'] "
+        "from pg_authid a join pg_roles r on r.oid = a.oid "
+        "where a.rolname = 'supabase_monitor_admin'\"",
+    )
+    assert result["succeeded"], result["stderr"]
+    # login, no password, bypassrls, no superuser/createrole/createdb/replication,
+    # and rolconfig has the role pin and auto_explain off
+    assert result["stdout"].strip() == "t|t|t|f|f|f|f|t", (
+        f"unexpected supabase_monitor_admin attributes: {result['stdout']!r}"
+    )
+
+    # -h 127.0.0.1: loopback is the only passwordless (trust) address
+    # ON_ERROR_STOP: without it psql exits with the LAST -c's status only
+    # 2>&1 (added per call): include psql errors in the assertion message
+    psql_monitor = (
+        "psql -U supabase_monitor_admin -h 127.0.0.1 -d postgres "
+        "-v ON_ERROR_STOP=1 -At "
+    )
+
+    # Passwordless loopback login works and the per-role settings apply
+    result = run_ssh_command(
+        ssh,
+        "sudo -u postgres "
+        + psql_monitor
+        + "-c 'select current_user' -c 'show default_transaction_read_only' "
+        "-c 'show pg_stat_statements.track' 2>&1",
+    )
+    assert result["succeeded"], (
+        f"supabase_monitor_admin could not log in over loopback: {result['stdout']!r}"
+    )
+    assert result["stdout"].split() == ["supabase_monitor_admin", "on", "none"], (
+        f"supabase_monitor_admin per-role settings not applied: {result['stdout']!r}"
+    )
+
+    # What postgres_exporter needs:
+    # - the exporter's startup options (superuser-only without GRANT SET ON
+    #   PARAMETER; without the grant the login fails)
+    # - read-only mode from pg_file_settings: the role's own
+    #   default_transaction_read_only = on hides it from SHOW. Expect "off"
+    #   on a fresh image.
+    # - no access to pg_hba_file_rules() / pg_ident_file_mappings(). Expect "f".
+    result = run_ssh_command(
+        ssh,
+        "sudo -u postgres env "
+        "PGOPTIONS='-c pg_stat_statements.track=none -c temp_file_limit=15MB' "
+        + psql_monitor
+        + "-c 'show pg_stat_statements.track' "
+        "-c 'show temp_file_limit' "
+        '-c "select coalesce((select setting from pg_file_settings '
+        "where name = 'default_transaction_read_only' and applied), 'off')\" "
+        "-c \"select has_function_privilege('pg_hba_file_rules()', 'EXECUTE') "
+        "or has_function_privilege('pg_ident_file_mappings()', 'EXECUTE')\" 2>&1",
+    )
+    assert result["succeeded"], (
+        "supabase_monitor_admin login with exporter options or pg_file_settings "
+        f"read failed: {result['stdout']!r}"
+    )
+    # [track, temp_file_limit, read-only mode, can read pg_hba/pg_ident]
+    assert result["stdout"].split() == ["none", "15MB", "off", "f"], (
+        f"unexpected supabase_monitor_admin monitoring output: {result['stdout']!r}"
+    )
+
+
 def test_custom_overrides_take_precedence_over_generated_optimizations(host):
     """Verify CLI-managed PostgreSQL config overrides generated optimizations.
 
