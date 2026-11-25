@@ -50,11 +50,30 @@ func TestCheck(t *testing.T) {
 }
 
 func TestExcepted(t *testing.T) {
-	p := &Policy{Exceptions: []string{"/etc/a", "/opt/v/**"}}
-	for path, want := range map[string]bool{"/etc/a": true, "/etc/ab": false, "/opt/v": true, "/opt/v/x/y": true, "/opt/vx": false} {
-		if p.excepted(path) != want {
-			t.Errorf("excepted(%q) = %v, want %v", path, !want, want)
+	p := &Policy{Exceptions: map[string][]string{"/etc/a": {"mode"}, "/opt/v/**": {"mode", "group-writable"}}}
+	for _, tt := range []struct {
+		path, rule string
+		want       bool
+	}{
+		{"/etc/a", "mode", true},
+		{"/etc/a", "group-writable", false},
+		{"/etc/ab", "mode", false},
+		{"/opt/v", "group-writable", true},
+		{"/opt/v/x/y", "mode", true},
+		{"/opt/v/x", "setuid", false},
+		{"/opt/vx", "mode", false},
+	} {
+		if got := p.excepted(tt.path, tt.rule); got != tt.want {
+			t.Errorf("excepted(%q, %q) = %v, want %v", tt.path, tt.rule, got, tt.want)
 		}
+	}
+}
+
+func TestLoadPolicyRejectsUnknownRule(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "p.yml")
+	os.WriteFile(path, []byte("exceptions:\n  /etc/a: [modee]\n"), 0o644)
+	if _, err := LoadPolicy(path); err == nil {
+		t.Error("expected error for unknown rule")
 	}
 }
 
@@ -77,7 +96,7 @@ func TestScan(t *testing.T) {
 		os.Chmod(full, mode)
 	}
 
-	got, err := Scan(context.Background(), root, &Policy{Exceptions: []string{"/etc/skip"}})
+	got, err := Scan(context.Background(), root, &Policy{Exceptions: map[string][]string{"/etc/skip": {"group-writable"}}})
 	if err != nil {
 		t.Fatal(err)
 	}

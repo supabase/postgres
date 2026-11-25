@@ -28,49 +28,49 @@ setuid:
   - /usr/sbin/pam_extrausers_chkpwd
   - /usr/sbin/unix_chkpwd
 exceptions:
-  - /var/local
-  - /var/mail
-  - /var/log/btmp
-  - /var/log/lastlog
-  - /var/log/wtmp
-  - /var/lib/cloud/instances/**
-  - /usr/local/kong/**
-  - /usr/local/openresty/**
-  - /etc/vector/examples/**
-  - /etc/pgbouncer-custom/**
-  - /etc/postgresql-custom/extension-custom-scripts/**
-  - /etc/envoy/envoy.yaml
-  - /etc/envoy/lds.yaml
-  - /etc/gotrue.env
-  - /etc/kong/kong.conf
-  - /etc/kong/kong.conf.default
-  - /etc/kong/kong.logrotate
-  - /etc/logrotate.d/logrotate-postgres-auth.conf
-  - /etc/logrotate.d/logrotate-postgres-csv.conf
-  - /etc/logrotate.d/logrotate-postgres.conf
-  - /etc/logrotate.d/logrotate-walg.conf
-  - /etc/machine-id
-  - /etc/pgbouncer/userlist.txt
-  - /etc/postgresql-custom/custom-overrides.conf
-  - /etc/postgresql-custom/generated-optimizations.conf
-  - /etc/postgresql-custom/read-replica.conf
-  - /etc/postgresql-custom/supautils.conf
-  - /etc/postgresql-custom/wal-g.conf
-  - /etc/postgresql/pg_hba.conf
-  - /etc/postgrest/base.conf
-  - /etc/postgrest/merge.sh
-  - /etc/ssl/adminapi/server.crt
-  - /etc/ssl/adminapi/server.key
-  - /etc/wal-g/config.json
-  - /opt/envoy
-  - /opt/envoy-hot-restarter.py
-  - /opt/start-envoy.sh
-  - /usr/lib/systemd/system/kong.service
-  - /usr/local/bin/kong
-  - /usr/local/bin/lapis
-  - /usr/local/bin/luarocks
-  - /usr/local/bin/luarocks-admin
-  - /usr/local/bin/project-init.sh
-  - /usr/local/bin/systemd-networkd-check-and-fix.sh
-  - /usr/local/etc/luarocks/config-5.1.lua
-  - /var/lib/cloud/scripts/per-boot/supaboot.sh
+  /var/local: [group-writable]
+  /var/mail: [group-writable]
+  /var/log/btmp: [group-writable]
+  /var/log/lastlog: [group-writable]
+  /var/log/wtmp: [group-writable]
+  /var/lib/cloud/instances/**: [mode]
+  /usr/local/kong/**: [group-writable, mode]
+  /usr/local/openresty/**: [group-writable, mode]
+  /etc/vector/examples/**: [group-writable, mode]
+  /etc/pgbouncer-custom/**: [group-writable, mode]
+  /etc/postgresql-custom/extension-custom-scripts/**: [group-writable, mode]
+  /etc/envoy/envoy.yaml: [group-writable, mode]
+  /etc/envoy/lds.yaml: [group-writable, mode]
+  /etc/gotrue.env: [group-writable, mode]
+  /etc/kong/kong.conf: [group-writable, mode]
+  /etc/kong/kong.conf.default: [group-writable, mode]
+  /etc/kong/kong.logrotate: [group-writable, mode]
+  /etc/logrotate.d/logrotate-postgres-auth.conf: [mode]
+  /etc/logrotate.d/logrotate-postgres-csv.conf: [mode]
+  /etc/logrotate.d/logrotate-postgres.conf: [mode]
+  /etc/logrotate.d/logrotate-walg.conf: [mode]
+  /etc/machine-id: [mode]
+  /etc/pgbouncer/userlist.txt: [group-writable, mode]
+  /etc/postgresql-custom/custom-overrides.conf: [group-writable, mode]
+  /etc/postgresql-custom/generated-optimizations.conf: [group-writable, mode]
+  /etc/postgresql-custom/read-replica.conf: [group-writable, mode]
+  /etc/postgresql-custom/supautils.conf: [group-writable, mode]
+  /etc/postgresql-custom/wal-g.conf: [group-writable, mode]
+  /etc/postgresql/pg_hba.conf: [group-writable, mode]
+  /etc/postgrest/base.conf: [group-writable, mode]
+  /etc/postgrest/merge.sh: [mode]
+  /etc/ssl/adminapi/server.crt: [mode]
+  /etc/ssl/adminapi/server.key: [mode]
+  /etc/wal-g/config.json: [group-writable, mode]
+  /opt/envoy: [mode]
+  /opt/envoy-hot-restarter.py: [mode]
+  /opt/start-envoy.sh: [mode]
+  /usr/lib/systemd/system/kong.service: [group-writable]
+  /usr/local/bin/kong: [group-writable, mode]
+  /usr/local/bin/lapis: [group-writable, mode]
+  /usr/local/bin/luarocks: [group-writable, mode]
+  /usr/local/bin/luarocks-admin: [group-writable, mode]
+  /usr/local/bin/project-init.sh: [mode]
+  /usr/local/bin/systemd-networkd-check-and-fix.sh: [mode]
+  /usr/local/etc/luarocks/config-5.1.lua: [group-writable, mode]
+  /var/lib/cloud/scripts/per-boot/supaboot.sh: [mode]

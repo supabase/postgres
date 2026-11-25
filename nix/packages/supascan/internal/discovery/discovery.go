@@ -15,14 +15,16 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+var rules = []string{"setuid", "world-writable", "group-writable", "owner", "group", "mode"}
+
 var skippedTrees = []string{"/proc", "/sys", "/dev", "/run", "/tmp", "/var/tmp", "/nix/store"}
 
 type Policy struct {
-	Roots      []string `yaml:"roots"`
-	FileModes  []string `yaml:"file_modes"`
-	DirModes   []string `yaml:"dir_modes"`
-	Setuid     []string `yaml:"setuid"`
-	Exceptions []string `yaml:"exceptions"`
+	Roots      []string            `yaml:"roots"`
+	FileModes  []string            `yaml:"file_modes"`
+	DirModes   []string            `yaml:"dir_modes"`
+	Setuid     []string            `yaml:"setuid"`
+	Exceptions map[string][]string `yaml:"exceptions"`
 }
 
 func LoadPolicy(path string) (*Policy, error) {
@@ -34,6 +36,13 @@ func LoadPolicy(path string) (*Policy, error) {
 	if err := yaml.Unmarshal(data, &p); err != nil {
 		return nil, fmt.Errorf("parse %s: %w", path, err)
 	}
+	for path, rs := range p.Exceptions {
+		for _, r := range rs {
+			if !slices.Contains(rules, r) {
+				return nil, fmt.Errorf("exception %s: unknown rule %q", path, r)
+			}
+		}
+	}
 	return &p, nil
 }
 
@@ -41,8 +50,11 @@ func under(path, tree string) bool {
 	return path == tree || strings.HasPrefix(path, strings.TrimRight(tree, "/")+"/")
 }
 
-func (p *Policy) excepted(path string) bool {
-	for _, e := range p.Exceptions {
+func (p *Policy) excepted(path, rule string) bool {
+	for e, rs := range p.Exceptions {
+		if !slices.Contains(rs, rule) {
+			continue
+		}
 		if base, ok := strings.CutSuffix(e, "/**"); ok {
 			if under(path, base) {
 				return true
@@ -106,7 +118,7 @@ func Scan(ctx context.Context, root string, p *Policy) ([]string, error) {
 			}
 			return nil
 		}
-		if walkErr != nil || (!d.IsDir() && !d.Type().IsRegular()) || p.excepted(path) {
+		if walkErr != nil || (!d.IsDir() && !d.Type().IsRegular()) {
 			return nil
 		}
 		info, err := d.Info()
@@ -124,22 +136,27 @@ func Scan(ctx context.Context, root string, p *Policy) ([]string, error) {
 
 func (p *Policy) check(path string, mode fs.FileMode, isDir bool, uid, gid uint32, users, groups map[uint32]bool) []string {
 	var out []string
+	add := func(rule, format string, args ...any) {
+		if !p.excepted(path, rule) {
+			out = append(out, fmt.Sprintf(format, args...))
+		}
+	}
 	perm := mode.Perm()
 	sticky := isDir && mode&fs.ModeSticky != 0
 	if !isDir && mode&(fs.ModeSetuid|fs.ModeSetgid) != 0 && !slices.Contains(p.Setuid, path) {
-		out = append(out, "setuid or setgid file not in setuid list")
+		add("setuid", "setuid or setgid file not in setuid list")
 	}
 	if perm&0o002 != 0 && !sticky {
-		out = append(out, fmt.Sprintf("world-writable %04o", perm))
+		add("world-writable", "world-writable %04o", perm)
 	}
 	if perm&0o020 != 0 && !sticky {
-		out = append(out, fmt.Sprintf("group-writable %04o", perm))
+		add("group-writable", "group-writable %04o", perm)
 	}
 	if !users[uid] {
-		out = append(out, fmt.Sprintf("owner id %d has no passwd entry", uid))
+		add("owner", "owner id %d has no passwd entry", uid)
 	}
 	if !groups[gid] {
-		out = append(out, fmt.Sprintf("group id %d has no group entry", gid))
+		add("group", "group id %d has no group entry", gid)
 	}
 	if slices.ContainsFunc(p.Roots, func(r string) bool { return under(path, r) }) {
 		modes := p.FileModes
@@ -147,7 +164,7 @@ func (p *Policy) check(path string, mode fs.FileMode, isDir bool, uid, gid uint3
 			modes = p.DirModes
 		}
 		if !allowed(modes, perm) {
-			out = append(out, fmt.Sprintf("mode %04o not in allowlist", perm))
+			add("mode", "mode %04o not in allowlist", perm)
 		}
 	}
 	return out
