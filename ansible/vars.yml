@@ -42,14 +42,14 @@ supa_tripwire_sha256:
   amd64: 34ae45b30fb9643de35053e16b5afab2cec4e120e8ebdb7a45e0dcb7e2e43333
   arm64: 114ae6925e1fef0776e7341d04f34a6ea0cf8182e85a17dcc2688e68dc28bbf1
 # renovate: datasource=github-tags packageName=aws/aws-cli
-aws_cli_release: 2.42.2
+aws_cli_release: 2.42.3
 aws_cli_artifacts:
   amd64:
     url: "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-{{ aws_cli_release }}.zip"
-    checksum: sha256:eb2181c8f391ee63acbadf53b13a80efe8702cbfef6a7da99a57e60631b47665
+    checksum: sha256:09a4a71458061ce4e6e8c1ddbeb5d128c219ef7c9906b7b92c3b542944c025c8
   arm64:
     url: "https://awscli.amazonaws.com/awscli-exe-linux-aarch64-{{ aws_cli_release }}.zip"
-    checksum: sha256:efda2e5d9d01726f47c491a7b006f55611e682a0bdb08f4d65594e27bdc6ab30
+    checksum: sha256:7c512283f5293c6fb0832ad648198993185889b22ea8b19bcd04c153dabc8643
 # renovate: datasource=github-releases packageName=envoyproxy/envoy
 envoy_release: 1.40.2
 envoy_artifacts:
