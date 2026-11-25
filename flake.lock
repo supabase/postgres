@@ -128,6 +128,7 @@
       "original": {
         "owner": "multigres",
         "repo": "multigres",
+        "rev": "08b06091344a58f15c48c87f19e4aac85c43ee06",
         "type": "github"
       }
     },

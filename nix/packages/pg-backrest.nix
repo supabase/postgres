@@ -8,6 +8,7 @@
 }:
 pgbackrest.overrideAttrs (
   finalAttrs: prevAttrs: {
+    # renovate: datasource=github-tags depName=pgbackrest packageName=pgbackrest/pgbackrest extractVersion=^release/(?<version>.+)$
     version = "2.60.1";
 
     src = fetchFromGitHub {

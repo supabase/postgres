@@ -3,6 +3,7 @@ let
   # Package GOSS - server validation spec runner
   goss = pkgs.buildGoModule rec {
     pname = "goss";
+    # renovate: datasource=github-tags depName=goss packageName=goss-org/goss extractVersion=^v(?<version>.+)$
     version = "0.4.8";
     src = pkgs.fetchFromGitHub {
       owner = "goss-org";
