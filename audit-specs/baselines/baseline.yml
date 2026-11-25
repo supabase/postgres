@@ -4741,6 +4741,12 @@ file:
     owner: "999"
     group: "1002"
     filetype: file
+  /etc/postgresql-custom/extension-custom-scripts/supabase_vault/before-create.sql:
+    exists: true
+    mode: "0775"
+    owner: "999"
+    group: "1002"
+    filetype: file
   /etc/postgresql-custom/extension-custom-scripts/supabase_vault/after-create.sql:
     exists: true
     mode: "0775"
