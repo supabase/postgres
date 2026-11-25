@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - develop
+      - ci/nix-store-sticky-disk
   workflow_dispatch:
 
 permissions:
