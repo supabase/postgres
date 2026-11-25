@@ -105,10 +105,10 @@ postgres_exporter_release: 0.21.1
 postgres_exporter_artifacts:
   amd64:
     url: "https://github.com/prometheus-community/postgres_exporter/releases/download/v{{ postgres_exporter_release }}/postgres_exporter-{{ postgres_exporter_release }}.linux-amd64.tar.gz"
-    checksum: sha256:cb89fc5bf4485fb554e0d640d9684fae143a4b2d5fa443009bd29c59f9129e84
+    checksum: sha256:02f316da4e9e409749d6f3b25102d3561cb408023110f3653f6514548926ff0c
   arm64:
     url: "https://github.com/prometheus-community/postgres_exporter/releases/download/v{{ postgres_exporter_release }}/postgres_exporter-{{ postgres_exporter_release }}.linux-arm64.tar.gz"
-    checksum: sha256:29ba62d538b92d39952afe12ee2e1f4401250d678ff4b354ff2752f4321c87a0
+    checksum: sha256:a52fb28b0ae9975b75fb7eb55458941a5960ff05b16d9375816f9c7266c89828
 # renovate: datasource=github-releases packageName=saltstack/salt
 salt_release: "3007.17" # keep this as an *explicit* string, otherwise gets treated as yaml float which will likely only lead to tears
 salt_artifacts:
