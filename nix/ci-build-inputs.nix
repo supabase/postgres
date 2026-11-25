@@ -5,15 +5,6 @@
   ...
 }:
 let
-  derivationsIn =
-    value:
-    if lib.isDerivation value then
-      [ value ]
-    else if lib.isAttrs value then
-      lib.concatMap derivationsIn (lib.attrValues value)
-    else
-      [ ];
-
   # NixOS tests are lazy derivations, which hide drvAttrs.
   buildAttrs = drv: drv.drvAttrs or drv.config.rawTestDerivation.drvAttrs or { };
 
@@ -33,7 +24,10 @@ in
     system:
     lib.unique (
       lib.concatMap directInputs (
-        derivationsIn self.checks.${system} ++ derivationsIn self.legacyPackages.${system}
+        lib.concatMap (lib.collect lib.isDerivation) [
+          self.checks.${system}
+          self.legacyPackages.${system}
+        ]
       )
     )
   );

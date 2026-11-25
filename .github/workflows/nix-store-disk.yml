@@ -1,7 +1,6 @@
 name: Nix store disk
 
-# Only this workflow commits the sticky disk that CI builds substitute from.
-# Jobs elsewhere mount it read-only and discard their changes.
+# The only workflow that commits the disk. CI jobs mount it with commit: false.
 
 on:
   push:
@@ -14,45 +13,42 @@ permissions:
 
 jobs:
   refresh:
-    name: Refresh ${{ matrix.system }}
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - system: x86_64-linux
-            runner: blacksmith-8vcpu-ubuntu-2404
-          - system: aarch64-linux
-            runner: blacksmith-8vcpu-ubuntu-2404-arm
+        runner: [blacksmith-8vcpu-ubuntu-2404, blacksmith-8vcpu-ubuntu-2404-arm]
     runs-on: ${{ matrix.runner }}
-    concurrency:
-      group: nix-store-disk-${{ matrix.system }}
-      cancel-in-progress: false
+    concurrency: nix-store-disk-${{ matrix.runner }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v7.0.1
 
       - name: Install nix
         uses: $/.github/actions/install-nix
+
+      - name: Mount nix store disk
+        uses: useblacksmith/stickydisk@v1.8.0
         with:
-          sticky-disk: write
+          key: nix-store-${{ runner.arch }}
+          path: /mnt/nix-store-disk
 
       - name: Substitute build inputs onto the disk
-        env:
-          SYSTEM: ${{ matrix.system }}
         run: |
           set -euo pipefail
-          store='local?root=/mnt/nix-store-disk'
-          roots=/mnt/nix-store-disk/nix/var/nix/gcroots/ci
-          nix=$(command -v nix)
+          disk=/mnt/nix-store-disk
+          store="local?root=$disk"
+          roots=$disk/nix/var/nix/gcroots/ci
+          paths=$RUNNER_TEMP/paths
+          sudo chown "$(id -u)" "$disk"
 
-          nix eval --json ".#ciBuildInputs.$SYSTEM" | jq -r '.[]' >"$RUNNER_TEMP/paths"
+          nix eval --json ".#ciBuildInputs.$(nix config show system)" | jq --raw-output '.[]' >"$paths"
 
-          sudo -H xargs --arg-file="$RUNNER_TEMP/paths" --no-run-if-empty \
-            "$nix" build --store "$store" --max-jobs 0 --keep-going --no-link \
+          xargs --arg-file="$paths" --no-run-if-empty \
+            nix build --store "$store" --max-jobs 0 --keep-going --no-link \
             || echo "::warning::some build inputs could not be substituted"
 
-          sudo rm -rf "$roots"
-          sudo mkdir -p "$roots"
-          sudo xargs --arg-file="$RUNNER_TEMP/paths" ln --symbolic --target-directory="$roots"
-          sudo -H "$nix" store gc --store "$store"
-          df --human-readable /mnt/nix-store-disk
+          rm -rf "$roots"
+          mkdir -p "$roots"
+          xargs --arg-file="$paths" ln --symbolic --target-directory="$roots"
+          nix store gc --store "$store"
+          df --human-readable "$disk"

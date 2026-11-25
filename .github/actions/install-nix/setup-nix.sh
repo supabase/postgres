@@ -27,17 +27,17 @@ else
 fi
 
 maybesudo mkdir -p "$nixconfdir"
-substituters=https://nix-postgres-artifacts.s3.amazonaws.com
-if [[ ${STICKY_DISK:-none} == read && $daemon == --daemon && $(uname -s) == Linux ]]; then
-	substituters="local?root=/mnt/nix-store-disk $substituters"
-fi
 cat >"$tmpdir/nix.conf" <<-EOF
 	always-allow-substitutes = true
 	extra-experimental-features = flakes nix-command
-	extra-substituters = $substituters
+	extra-substituters = https://nix-postgres-artifacts.s3.amazonaws.com
 	extra-trusted-public-keys = nix-postgres-artifacts:dGZlQOvKcNEjvT7QEAJbcV6b6uk7VF/hWMjhYleiaLI=
 	max-jobs = 5
 EOF
+
+if [[ -d /mnt/nix-store-disk ]]; then
+	echo 'extra-substituters = local?root=/mnt/nix-store-disk' >>"$tmpdir/nix.conf"
+fi
 
 if [[ -e /dev/kvm ]]; then
 	sudo chown runner /dev/kvm
