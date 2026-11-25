@@ -59,7 +59,7 @@ sudo nix run .#supascan -- validate --format documentation /path/to/baselines
 
 `validate` also runs `discover` when `file-discovery.yml` is in the baselines directory or its parent. It reports these rules:
 
-- `setuid`: setuid or setgid files not in the `setuid` list.
+- `setuid`: setuid or setgid files.
 - `world-writable`: world-writable paths other than sticky directories.
 - `group-writable`: group-writable paths other than sticky directories.
 - `owner`: owner ids with no passwd entry.

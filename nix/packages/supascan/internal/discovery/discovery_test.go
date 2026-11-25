@@ -12,10 +12,10 @@ import (
 
 func TestCheck(t *testing.T) {
 	p := &Policy{
-		Roots:     []string{"/etc"},
-		FileModes: []string{"0644"},
-		DirModes:  []string{"0755"},
-		Setuid:    []string{"/usr/bin/allowed"},
+		Roots:      []string{"/etc"},
+		FileModes:  []string{"0644"},
+		DirModes:   []string{"0755"},
+		Exceptions: map[string][]string{"/usr/bin/allowed": {"setuid"}},
 	}
 	known := map[uint32]bool{0: true}
 	tests := []struct {

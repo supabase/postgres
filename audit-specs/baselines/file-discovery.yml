@@ -2,31 +2,30 @@
 roots: [/etc, /usr/local, /opt, /data, /var/lib]
 file_modes: ["0644", "0640", "0600", "0440", "0755"]
 dir_modes: ["0755", "0750", "0700"]
-setuid:
-  - /usr/bin/chage
-  - /usr/bin/chfn
-  - /usr/bin/chsh
-  - /usr/bin/crontab
-  - /usr/bin/dotlockfile
-  - /usr/bin/expiry
-  - /usr/bin/fusermount3
-  - /usr/bin/gpasswd
-  - /usr/bin/mount
-  - /usr/bin/newgrp
-  - /usr/bin/passwd
-  - /usr/bin/pkexec
-  - /usr/bin/ssh-agent
-  - /usr/bin/su
-  - /usr/bin/sudo
-  - /usr/bin/umount
-  - /usr/bin/wall
-  - /usr/bin/write.ul
-  - /usr/lib/dbus-1.0/dbus-daemon-launch-helper
-  - /usr/lib/openssh/ssh-keysign
-  - /usr/lib/polkit-1/polkit-agent-helper-1
-  - /usr/sbin/pam_extrausers_chkpwd
-  - /usr/sbin/unix_chkpwd
 exceptions:
+  /usr/bin/chage: [setuid]
+  /usr/bin/chfn: [setuid]
+  /usr/bin/chsh: [setuid]
+  /usr/bin/crontab: [setuid]
+  /usr/bin/dotlockfile: [setuid]
+  /usr/bin/expiry: [setuid]
+  /usr/bin/fusermount3: [setuid]
+  /usr/bin/gpasswd: [setuid]
+  /usr/bin/mount: [setuid]
+  /usr/bin/newgrp: [setuid]
+  /usr/bin/passwd: [setuid]
+  /usr/bin/pkexec: [setuid]
+  /usr/bin/ssh-agent: [setuid]
+  /usr/bin/su: [setuid]
+  /usr/bin/sudo: [setuid]
+  /usr/bin/umount: [setuid]
+  /usr/bin/wall: [setuid]
+  /usr/bin/write.ul: [setuid]
+  /usr/lib/dbus-1.0/dbus-daemon-launch-helper: [setuid]
+  /usr/lib/openssh/ssh-keysign: [setuid]
+  /usr/lib/polkit-1/polkit-agent-helper-1: [setuid]
+  /usr/sbin/pam_extrausers_chkpwd: [setuid]
+  /usr/sbin/unix_chkpwd: [setuid]
   /var/local: [group-writable]
   /var/mail: [group-writable]
   /var/log/btmp: [group-writable]

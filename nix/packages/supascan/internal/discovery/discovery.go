@@ -1,7 +1,6 @@
 package discovery
 
 import (
-	"bufio"
 	"fmt"
 	"io/fs"
 	"os"
@@ -20,7 +19,6 @@ type Policy struct {
 	Roots      []string            `yaml:"roots"`
 	FileModes  []string            `yaml:"file_modes"`
 	DirModes   []string            `yaml:"dir_modes"`
-	Setuid     []string            `yaml:"setuid"`
 	Exceptions map[string][]string `yaml:"exceptions"`
 }
 
@@ -42,14 +40,8 @@ func under(path, tree string) bool {
 
 func (p *Policy) excepted(path, rule string) bool {
 	for e, rs := range p.Exceptions {
-		if !slices.Contains(rs, rule) {
-			continue
-		}
-		if base, ok := strings.CutSuffix(e, "/**"); ok {
-			if under(path, base) {
-				return true
-			}
-		} else if path == e {
+		base, glob := strings.CutSuffix(e, "/**")
+		if slices.Contains(rs, rule) && (path == e || glob && under(path, base)) {
 			return true
 		}
 	}
@@ -57,21 +49,19 @@ func (p *Policy) excepted(path, rule string) bool {
 }
 
 func readIDs(path string) (map[uint32]bool, error) {
-	f, err := os.Open(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
 	ids := map[uint32]bool{}
-	sc := bufio.NewScanner(f)
-	for sc.Scan() {
-		if fields := strings.Split(sc.Text(), ":"); len(fields) >= 3 {
+	for _, line := range strings.Split(string(data), "\n") {
+		if fields := strings.Split(line, ":"); len(fields) >= 3 {
 			if n, err := strconv.ParseUint(fields[2], 10, 32); err == nil {
 				ids[uint32(n)] = true
 			}
 		}
 	}
-	return ids, sc.Err()
+	return ids, nil
 }
 
 // Scan reports paths relative to root, so an extracted image can be scanned in place.
@@ -122,8 +112,8 @@ func (p *Policy) check(path string, mode fs.FileMode, isDir bool, uid, gid uint3
 	}
 	perm := mode.Perm()
 	sticky := isDir && mode&fs.ModeSticky != 0
-	if !isDir && mode&(fs.ModeSetuid|fs.ModeSetgid) != 0 && !slices.Contains(p.Setuid, path) {
-		add("setuid", "setuid or setgid file not in setuid list")
+	if !isDir && mode&(fs.ModeSetuid|fs.ModeSetgid) != 0 {
+		add("setuid", "setuid or setgid file")
 	}
 	if perm&0o002 != 0 && !sticky {
 		add("world-writable", "world-writable %04o", perm)
