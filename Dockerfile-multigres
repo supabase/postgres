@@ -194,25 +194,31 @@ RUN sed -i 's/ timescaledb,//g; s/ plv8,//g' /etc/postgresql-custom/supautils.co
 
 COPY --chown=postgres:postgres docker/pgctld/multigres-roles.sql /docker-entrypoint-initdb.d/multigres-roles.sql
 
-# Generate a single SQL manifest that pgctld runs via --init-db-sql-file after initdb.
+# Generate the base SQL manifest that pgctld runs from POSTGRES_INITDB_SQL_DIRS after initdb.
 # Creates the postgres and multigres_probe roles (multigres-roles.sql), runs
 # init-scripts as postgres (matching migrate.sh), then runs migrations as supabase_admin.
 RUN set -e && \
-    manifest=/docker-entrypoint-initdb.d/multigres-init.sql && \
+    mkdir -p /docker-entrypoint-initdb.d/multigres-init.d && \
+    manifest=/docker-entrypoint-initdb.d/multigres-init.d/00-multigres-init.sql && \
     printf -- "-- Auto-generated: run init-scripts and migrations after initdb\n" > "$manifest" && \
-    printf '\\ir multigres-roles.sql\n' >> "$manifest" && \
+    printf '\\ir ../multigres-roles.sql\n' >> "$manifest" && \
     printf "ALTER DATABASE postgres OWNER TO postgres;\n\n" >> "$manifest" && \
     printf "SET SESSION AUTHORIZATION postgres;\n" >> "$manifest" && \
     for f in $(ls /docker-entrypoint-initdb.d/init-scripts/*.sql 2>/dev/null | sort); do \
-        printf '\\ir init-scripts/%s\n' "$(basename "$f")" >> "$manifest"; \
+        printf '\\ir ../init-scripts/%s\n' "$(basename "$f")" >> "$manifest"; \
     done && \
     printf "\nRESET SESSION AUTHORIZATION;\n\n" >> "$manifest" && \
     for f in $(ls /docker-entrypoint-initdb.d/migrations/*.sql 2>/dev/null | sort); do \
-        printf '\\ir migrations/%s\n' "$(basename "$f")" >> "$manifest"; \
+        printf '\\ir ../migrations/%s\n' "$(basename "$f")" >> "$manifest"; \
     done && \
-    chown postgres:postgres "$manifest"
+    printf "\nRESET ALL;\n" >> "$manifest" && \
+    chown -R postgres:postgres /docker-entrypoint-initdb.d/multigres-init.d
 
-ENV POSTGRES_INITDB_SQL_FILES=/docker-entrypoint-initdb.d/multigres-init.sql
+# pgctld runs every top-level *.sql in this dir (lexicographic order, one psql
+# session, as supabase_admin). Derived images can add scripts here that sort
+# after 00-multigres-init.sql, or append their own role:path entry
+# (whitespace-separated; pgctld does not split this env var on commas).
+ENV POSTGRES_INITDB_SQL_DIRS=supabase_admin:/docker-entrypoint-initdb.d/multigres-init.d
 ENV PATH="/nix/var/nix/profiles/default/bin:/usr/lib/postgresql/bin:${PATH}"
 ENV LOCALE_ARCHIVE=/nix/var/nix/profiles/default/lib/locale/locale-archive
 
@@ -276,21 +282,27 @@ COPY --chown=postgres:postgres docker/pgctld/multigres-roles.sql /docker-entrypo
 
 # Regenerate manifest after orioledb added 00-pre-init.sql to init-scripts/
 RUN set -e && \
-    manifest=/docker-entrypoint-initdb.d/multigres-init.sql && \
+    mkdir -p /docker-entrypoint-initdb.d/multigres-init.d && \
+    manifest=/docker-entrypoint-initdb.d/multigres-init.d/00-multigres-init.sql && \
     printf -- "-- Auto-generated: run init-scripts and migrations after initdb\n" > "$manifest" && \
-    printf '\\ir multigres-roles.sql\n' >> "$manifest" && \
+    printf '\\ir ../multigres-roles.sql\n' >> "$manifest" && \
     printf "ALTER DATABASE postgres OWNER TO postgres;\n\n" >> "$manifest" && \
     printf "SET SESSION AUTHORIZATION postgres;\n" >> "$manifest" && \
     for f in $(ls /docker-entrypoint-initdb.d/init-scripts/*.sql 2>/dev/null | sort); do \
-        printf '\\ir init-scripts/%s\n' "$(basename "$f")" >> "$manifest"; \
+        printf '\\ir ../init-scripts/%s\n' "$(basename "$f")" >> "$manifest"; \
     done && \
     printf "\nRESET SESSION AUTHORIZATION;\n\n" >> "$manifest" && \
     for f in $(ls /docker-entrypoint-initdb.d/migrations/*.sql 2>/dev/null | sort); do \
-        printf '\\ir migrations/%s\n' "$(basename "$f")" >> "$manifest"; \
+        printf '\\ir ../migrations/%s\n' "$(basename "$f")" >> "$manifest"; \
     done && \
-    chown postgres:postgres "$manifest"
+    printf "\nRESET ALL;\n" >> "$manifest" && \
+    chown -R postgres:postgres /docker-entrypoint-initdb.d/multigres-init.d
 
-ENV POSTGRES_INITDB_SQL_FILES=/docker-entrypoint-initdb.d/multigres-init.sql
+# pgctld runs every top-level *.sql in this dir (lexicographic order, one psql
+# session, as supabase_admin). Derived images can add scripts here that sort
+# after 00-multigres-init.sql, or append their own role:path entry
+# (whitespace-separated; pgctld does not split this env var on commas).
+ENV POSTGRES_INITDB_SQL_DIRS=supabase_admin:/docker-entrypoint-initdb.d/multigres-init.d
 ENV PATH="/nix/var/nix/profiles/default/bin:/usr/lib/postgresql/bin:${PATH}"
 ENV LOCALE_ARCHIVE=/nix/var/nix/profiles/default/lib/locale/locale-archive
 
