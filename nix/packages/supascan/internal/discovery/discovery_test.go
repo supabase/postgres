@@ -87,12 +87,21 @@ func TestScan(t *testing.T) {
 		os.Chmod(full, mode)
 	}
 
+	suidKept := false
+	if info, err := os.Stat(filepath.Join(root, "srv/suid")); err == nil {
+		suidKept = info.Mode()&fs.ModeSetuid != 0
+	}
+
 	got, err := Scan(root, &Policy{Exceptions: map[string][]string{"/etc/skip": {"group-writable"}}})
 	if err != nil {
 		t.Fatal(err)
 	}
 	text := strings.Join(got, "\n")
-	for _, want := range []string{"/etc/loose: group-writable", "/srv/suid: setuid"} {
+	wants := []string{"/etc/loose: group-writable"}
+	if suidKept {
+		wants = append(wants, "/srv/suid: setuid")
+	}
+	for _, want := range wants {
 		if !strings.Contains(text, want) {
 			t.Errorf("missing %q in:\n%s", want, text)
 		}
