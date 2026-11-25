@@ -52,7 +52,7 @@ let
     {
       support_upgrade ? true,
       check_install_all_versions ? true,
-      skip_before_create_on_first_install ? false,
+      skip_before_create_for ? null,
       extraNode ? { },
     }:
     pname:
@@ -99,9 +99,6 @@ let
           extension_name = "${pname}"
           support_upgrade = ${if support_upgrade then "True" else "False"}
           check_install_all_versions = ${if check_install_all_versions then "True" else "False"}
-          skip_before_create_on_first_install = ${
-            if skip_before_create_on_first_install then "True" else "False"
-          }
           pg17_configuration = "${pg17-configuration}"
           orioledb17_configuration = "${orioledb17-configuration}"
           sql_test_directory = Path("${../../tests}")
@@ -113,10 +110,13 @@ let
           server.wait_for_unit("supabase-db-init.service")
 
           test = PostgresExtensionTest(server, extension_name, versions, sql_test_directory, support_upgrade)
+          ${lib.optionalString (
+            skip_before_create_for != null
+          ) ''test.skip_before_create_for = "${skip_before_create_for}"''}
 
           with subtest("Check upgrade path with postgresql 15"):
             if check_install_all_versions:
-              test.check_upgrade_path("15", skip_before_create_on_first_install)
+              test.check_upgrade_path("15")
 
           last_version = None
           with subtest("Check the install of the last version of the extension"):
@@ -151,7 +151,7 @@ let
 
           with subtest("Check upgrade path with postgresql 17"):
             if check_install_all_versions:
-              test.check_upgrade_path("17", skip_before_create_on_first_install)
+              test.check_upgrade_path("17")
 
           with subtest("switch to orioledb 17"):
             server.execute(
@@ -183,7 +183,7 @@ let
 
           with subtest("Check upgrade path with orioledb 17"):
             if check_install_all_versions:
-              test.check_upgrade_path("orioledb-17", skip_before_create_on_first_install)
+              test.check_upgrade_path("orioledb-17")
         '';
     };
   extTest =
@@ -584,7 +584,7 @@ builtins.listToAttrs (
       {
         name = "vault";
         pname = "supabase_vault";
-        args.skip_before_create_on_first_install = true;
+        args.skip_before_create_for = "0.2.8";
       }
       {
         pname = "pg_repack";

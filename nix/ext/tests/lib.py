@@ -40,6 +40,7 @@ class PostgresExtensionTest(object):
         self.sql_test_dir = sql_test_dir
         self.schema = schema
         self.lib_name = lib_name or extension_name
+        self.skip_before_create_for: Optional[str] = None
 
     def create_schema(self):
         self.run_sql(f"CREATE SCHEMA IF NOT EXISTS {self.schema};")
@@ -62,9 +63,18 @@ class PostgresExtensionTest(object):
             ext_schema = f"SCHEMA {self.schema} "
         else:
             ext_schema = ""
-        self.run_sql(
-            f"""CREATE EXTENSION {self.extension_name} WITH {ext_schema}VERSION '{version}' CASCADE;"""
-        )
+        script = None
+        if version == self.skip_before_create_for:
+            scripts_dir = self.run_sql("SHOW supautils.extension_custom_scripts_path;")
+            script = f"{scripts_dir}/{self.extension_name}/before-create.sql"
+            self.vm.succeed(f"mv {script} {script}.disabled")
+        try:
+            self.run_sql(
+                f"""CREATE EXTENSION {self.extension_name} WITH {ext_schema}VERSION '{version}' CASCADE;"""
+            )
+        finally:
+            if script:
+                self.vm.succeed(f"mv {script}.disabled {script}")
         # Verify version was installed correctly
         self.assert_version_matches(version)
 
@@ -100,23 +110,8 @@ class PostgresExtensionTest(object):
             f"Expected version {expected_version}, but found {installed_version}"
         )
 
-    def install_extension_without_before_create(self, version: str):
-        """Install a version with the extension's before-create script moved aside."""
-        scripts_dir = self.run_sql("SHOW supautils.extension_custom_scripts_path;")
-        script = f"{scripts_dir}/{self.extension_name}/before-create.sql"
-        self.vm.succeed(f"mv {script} {script}.disabled")
-        try:
-            self.install_extension(version)
-        finally:
-            self.vm.succeed(f"mv {script}.disabled {script}")
-
-    def check_upgrade_path(
-        self, pg_version: str, skip_before_create_on_first_install: bool = False
-    ):
+    def check_upgrade_path(self, pg_version: str):
         """Test the complete upgrade path for a PostgreSQL version.
-
-        skip_before_create_on_first_install installs the first version with the before-create script
-        moved aside, for a version that script rejects.
 
         This method tests all available extension versions for a given PostgreSQL
         version, either through in-place upgrades or reinstallation depending on
@@ -138,10 +133,7 @@ class PostgresExtensionTest(object):
         # Install and verify first version
         first_version = available_versions[0]
         self.drop_extension()
-        if skip_before_create_on_first_install:
-            self.install_extension_without_before_create(first_version)
-        else:
-            self.install_extension(first_version)
+        self.install_extension(first_version)
 
         # Test remaining versions
         for version in available_versions[1:]:
