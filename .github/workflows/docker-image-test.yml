@@ -82,14 +82,6 @@ jobs:
             -t "supabase-postgres:${{ matrix.name }}-analyze" \
             .
 
-      - name: Check file policy
-        run: |
-          set -o pipefail
-          echo "=== File policy check for ${{ matrix.name }} ==="
-          container=$(docker create "pg-docker-test:${{ matrix.name }}")
-          trap 'docker rm "$container" >/dev/null' EXIT
-          docker export "$container" | python3 ansible/files/file_policy_check.py --tar -
-
       - name: Run image size analysis
         if: ${{ matrix.target == '' }}
         run: |

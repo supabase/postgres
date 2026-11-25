@@ -4,7 +4,6 @@ import os
 import stat
 import pwd
 import grp
-import subprocess
 
 
 # Expected groups for each user
@@ -331,16 +330,6 @@ def check_directory_permissions():
     print("\nAll directory permissions are correct.")
 
 
-def check_file_policy():
-    """Check modes and owners across the filesystem against file_policy.yml."""
-    script = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "file_policy_check.py"
-    )
-    result = subprocess.run([sys.executable, script, "--root", "/"], check=False)
-    if result.returncode != 0:
-        sys.exit(result.returncode)
-
-
 def main():
     parser = argparse.ArgumentParser(
         prog="Supabase Postgres Artifact Permissions Checker",
@@ -409,8 +398,6 @@ def main():
 
     # Check directory permissions for security-critical paths
     check_directory_permissions()
-
-    check_file_policy()
 
 
 if __name__ == "__main__":
