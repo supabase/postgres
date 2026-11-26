@@ -54,30 +54,18 @@ exceptions:
   /var/log/pgbackrest/**: [group-writable]
   /var/spool/pgbackrest: [group-writable]
 
-  # to-be-fixed: group-writable or 0775 directories created by ansible
+  # required: config the adminapi service writes through its group membership
   /etc: [group-writable, mode]
   /etc/auth.d: [group-writable, mode]
   /etc/envoy: [group-writable, mode]
-  /etc/kong: [group-writable, mode]
-  /etc/postgresql: [group-writable, mode]
-  /etc/postgresql-custom: [group-writable, mode]
-  /etc/postgresql-custom/conf.d: [group-writable, mode]
-  /etc/postgrest: [group-writable, mode]
-  /etc/vector: [group-writable, mode]
-  /opt/gotrue: [group-writable, mode]
-  /opt/postgres_exporter: [group-writable, mode]
-
-  # to-be-fixed: group-writable or 0664 files created by ansible
   /etc/envoy/cds.yaml: [group-writable, mode]
   /etc/envoy/envoy.yaml: [group-writable, mode]
   /etc/envoy/lds.yaml: [group-writable, mode]
-  /etc/gotrue.env: [group-writable, mode]
-  /etc/kong/kong.conf: [group-writable, mode]
-  /etc/kong/kong.conf.default: [group-writable, mode]
-  /etc/kong/kong.logrotate: [group-writable, mode]
-  /etc/pam.d/postgresql: [group-writable, mode]
+  /etc/kong: [group-writable, mode]
   /etc/pgbouncer-custom/**: [group-writable, mode]
-  /etc/pgbouncer/userlist.txt: [group-writable, mode]
+  /etc/postgresql: [group-writable, mode]
+  /etc/postgresql-custom: [group-writable, mode]
+  /etc/postgresql-custom/conf.d: [group-writable, mode]
   /etc/postgresql-custom/custom-overrides.conf: [group-writable, mode]
   /etc/postgresql-custom/extension-custom-scripts/**: [group-writable, mode]
   /etc/postgresql-custom/generated-optimizations.conf: [group-writable, mode]
@@ -85,10 +73,24 @@ exceptions:
   /etc/postgresql-custom/supautils.conf: [group-writable, mode]
   /etc/postgresql-custom/wal-g.conf: [group-writable, mode]
   /etc/postgresql/pg_hba.conf: [group-writable, mode]
+  /etc/postgrest: [group-writable, mode]
   /etc/postgrest/base.conf: [group-writable, mode]
+  /etc/vector: [group-writable, mode]
   /etc/vector/examples/**: [group-writable, mode]
   /etc/vector/vector.yaml: [group-writable, mode]
   /etc/wal-g/config.json: [group-writable, mode]
+  /opt/gotrue: [group-writable, mode]
+
+  # to-be-fixed: group-writable or 0775 directories created by ansible
+  /opt/postgres_exporter: [group-writable, mode]
+
+  # to-be-fixed: group-writable or 0664 files created by ansible
+  /etc/gotrue.env: [group-writable, mode]
+  /etc/kong/kong.conf: [group-writable, mode]
+  /etc/kong/kong.conf.default: [group-writable, mode]
+  /etc/kong/kong.logrotate: [group-writable, mode]
+  /etc/pam.d/postgresql: [group-writable, mode]
+  /etc/pgbouncer/userlist.txt: [group-writable, mode]
   /usr/lib/systemd/system/kong.service: [group-writable]
 
   # to-be-fixed: modes outside the allowlist
