@@ -104,6 +104,16 @@ jobs:
           echo "=== Running tests for ${{ matrix.name }} ==="
           nix run .#docker-image-test -- --no-build --target ${{ matrix.target }} ${{ matrix.dockerfile }}
 
+      - name: Check file policy
+        run: |
+          echo "=== File policy check for ${{ matrix.name }} ==="
+          root=$(mktemp -d)
+          container=$(docker create "pg-docker-test:${{ matrix.name }}")
+          trap 'docker rm "$container" >/dev/null; sudo rm -rf "$root"' EXIT
+          docker export "$container" | sudo tar -xpf - -C "$root"
+          supascan=$(nix build .#supascan --no-link --print-out-paths)
+          sudo "$supascan/bin/supascan" discover audit-specs/docker/file-discovery.yml --root "$root"
+
       - name: Show container logs on failure
         if: failure()
         run: |
