@@ -215,11 +215,6 @@ build {
   }
 
   provisioner "file" {
-    source      = "packer/files/apparmor_profiles"
-    destination = "/tmp"
-  }
-
-  provisioner "file" {
     source      = "migrations"
     destination = "/tmp"
   }

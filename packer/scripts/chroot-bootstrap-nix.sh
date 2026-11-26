@@ -86,11 +86,6 @@ function install_initial_packages {
 	fi
 }
 
-function setup_apparmor {
-	# Copy apparmor profiles
-	cp -rv /tmp/apparmor_profiles/* /etc/apparmor.d/
-}
-
 function setup_grub {
 	cat >/etc/default/grub <<-EOF
 		GRUB_DEFAULT=0
@@ -179,7 +174,6 @@ install_initial_packages
 setup_locale
 setup_postgesql_env
 setup_grub
-setup_apparmor
 setup_hostname
 create_admin_account
 set_default_target
