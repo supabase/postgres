@@ -11,6 +11,7 @@ exceptions:
   /usr/bin/expiry: [setuid]
   /usr/bin/gpasswd: [setuid]
   /usr/bin/passwd: [setuid]
+  /usr/sbin/unix_chkpwd: [setuid]
 
   # required: Alpine and Nix defaults
   /etc/network/if-up.d/dad: [group-writable, mode]

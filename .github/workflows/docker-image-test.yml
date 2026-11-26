@@ -108,6 +108,7 @@ jobs:
         run: |
           echo "=== File policy check for ${{ matrix.name }} ==="
           root=$(mktemp -d)
+          sudo chown root:root "$root"
           container=$(docker create "pg-docker-test:${{ matrix.name }}")
           trap 'docker rm "$container" >/dev/null; sudo rm -rf "$root"' EXIT
           docker export "$container" | sudo tar -xpf - -C "$root"
