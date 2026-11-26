@@ -33,11 +33,24 @@ SCRIPT_DIR=$(dirname -- "$0")
 # Each attempt overwrites the log. Failed attempts are shipped before the retry.
 LOG_FILE="/var/log/pg-upgrade-initiate.log"
 touch "$LOG_FILE"
-chmod 644 "$LOG_FILE"
+chmod 640 "$LOG_FILE"
+
+IS_CI=${IS_CI:-}
+IS_LOCAL_UPGRADE=${IS_LOCAL_UPGRADE:-}
+
+# Truncate once (each attempt overwrites the log), then always append so the
+# foreground and the background job never fight over file offsets.
+: >"$LOG_FILE"
 
 # From here on, everything written to stdout/stderr (log messages, but also
 # errors from systemctl, install, sync, etc.) is written to the log file.
-exec >"$LOG_FILE" 2>&1
+if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
+	# Background (production) mode: nobody reads the console.
+	exec >>"$LOG_FILE" 2>&1
+else
+	# Foreground CI / local mode: keep diagnostics on the console as well.
+	exec > >(tee -a "$LOG_FILE") 2>&1
+fi
 
 # Minimal fallback so that "log" exists even if common.sh cannot be sourced.
 # common.sh redefines it with the real implementation.
@@ -50,8 +63,6 @@ source "$SCRIPT_DIR/common.sh" || {
 	exit 1
 }
 
-IS_CI=${IS_CI:-}
-IS_LOCAL_UPGRADE=${IS_LOCAL_UPGRADE:-}
 IS_NIX_UPGRADE=${IS_NIX_UPGRADE:-}
 IS_NIX_BASED_SYSTEM="false"
 
@@ -173,7 +184,8 @@ cleanup() {
 					if [ -e "$dest" ]; then
 						dest="${dest}.$(date +%s)"
 					fi
-					if mv "$dir" "$dest"; then
+					# fall back to copy + remove if a plain mv fails
+					if mv "$dir" "$dest" 2>/dev/null || { cp -a "$dir" "$dest" && rm -rf "$dir"; }; then
 						LAST_ARCHIVED_DIR="$dest"
 					else
 						log "WARNING: failed to archive $dir to $dest"
@@ -183,13 +195,28 @@ cleanup() {
 
 			# *.txt files at the root of pg_upgrade_output.d come from a previous
 			# attempt: attach them to the most recent archived timestamp directory
-			# (or to the root of the archive if there is none).
+			# (or to a dedicated dated directory if there is none, never to the
+			# root of the archive).
+			if [ -z "$LAST_ARCHIVED_DIR" ]; then
+				LAST_ARCHIVED_DIR="$PG_UPGRADE_PREVIOUS_DIR/unknown-$(date +%s)"
+				mkdir -p "$LAST_ARCHIVED_DIR" || true
+			fi
 			for file in "$PG_UPGRADE_OUTPUT_DIR"/*.txt; do
 				if [ -f "$file" ]; then
-					mv "$file" "${LAST_ARCHIVED_DIR:-$PG_UPGRADE_PREVIOUS_DIR}/" || log "WARNING: failed to archive $file"
+					mv "$file" "$LAST_ARCHIVED_DIR/" || log "WARNING: failed to archive $file"
 				fi
 			done
 		fi
+
+		# Names of this attempt's timestamp directories: only these are read below,
+		# even if an older directory could not be archived and is still in place.
+		CURRENT_ATTEMPT_DIRS=()
+		for dir in "${MOUNT_POINT}"/pgdata/pg_upgrade_output.d/*/; do
+			if [ -d "$dir" ]; then
+				dir="${dir%/}"
+				CURRENT_ATTEMPT_DIRS+=("${dir##*/}")
+			fi
+		done
 
 		cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/ || true
 		chown -R postgres:postgres /var/log/pg_upgrade_output.d/ || true
@@ -198,30 +225,34 @@ cleanup() {
 		# Layout: pg_upgrade_output.d/<timestamp>/{log,dump}/<files>. Only log/ is
 		# appended (dump/ holds the schema dumps: large and not useful in the log).
 
-		for file in /var/log/pg_upgrade_output.d/*/log/*; do
-			if [ -f "$file" ]; then
-				if [ -s "$file" ]; then
-					log "pg_upgrade_output log file: $file:"
-					cat "$file" >>"$LOG_FILE" 2>/dev/null || true
-				else
-					log "pg_upgrade_output log file: $file (empty)"
+		for name in "${CURRENT_ATTEMPT_DIRS[@]}"; do
+			for file in "/var/log/pg_upgrade_output.d/$name"/log/*; do
+				if [ -f "$file" ]; then
+					if [ -s "$file" ]; then
+						log "pg_upgrade_output log file: $file:"
+						cat "$file" >>"$LOG_FILE" 2>/dev/null || true
+					else
+						log "pg_upgrade_output log file: $file (empty)"
+					fi
 				fi
-			fi
+			done
 		done
 
 		# Layout: pg_upgrade_output.d/<timestamp>/*txt. Special checks during
 		# pg_upgrade will create special TXT files at the root of this directory
 		# adding them since this is useful for debugging too
 
-		for file in /var/log/pg_upgrade_output.d/*/*.txt; do
-			if [ -f "$file" ]; then
-				if [ -s "$file" ]; then
-					log "pg_upgrade_output report filename : $file:"
-					cat "$file" >>"$LOG_FILE" 2>/dev/null || true
-				else
-					log "pg_upgrade_output report filename : $file (empty)"
+		for name in "${CURRENT_ATTEMPT_DIRS[@]}"; do
+			for file in "/var/log/pg_upgrade_output.d/$name"/*.txt; do
+				if [ -f "$file" ]; then
+					if [ -s "$file" ]; then
+						log "pg_upgrade_output report filename : $file:"
+						cat "$file" >>"$LOG_FILE" 2>/dev/null || true
+					else
+						log "pg_upgrade_output report filename : $file (empty)"
+					fi
 				fi
-			fi
+			done
 		done
 
 		log "end of pg_upgrade outputs"
@@ -666,23 +697,24 @@ EXTRA_NIX_CONF
 
 	if [ -f "$MOUNT_POINT/upgrade-reporting-credentials.target" ]; then
 		if [ -f /root/upgrade-reporting-credentials ]; then
-
 			# the fresh ANON key will replace a potentially old and unvalid one
-			# preventing the logs to be shipped (curl post would then fail)
-
-			mv /root/upgrade-reporting-credentials /root/upgrade-reporting-credentials.bkp
-			mv "$MOUNT_POINT/upgrade-reporting-credentials.target" /root/upgrade-reporting-credentials
-			chown root:root /root/upgrade-reporting-credentials
-			chmod 600 /root/upgrade-reporting-credentials
-
-			# reload the ANON key since it is loaded when common.sh is included
-			# at the start of this script
-
-			# shellcheck disable=SC2034
-			REPORTING_ANON_KEY=$(cat /root/upgrade-reporting-credentials)
-
+			# preventing the logs to be shipped (curl post would then fail).
+			# Optional feature: never fail the upgrade because of it.
+			if mv -f /root/upgrade-reporting-credentials /root/upgrade-reporting-credentials.bkp &&
+				mv "$MOUNT_POINT/upgrade-reporting-credentials.target" /root/upgrade-reporting-credentials; then
+				chown root:root /root/upgrade-reporting-credentials || true
+				chmod 600 /root/upgrade-reporting-credentials || true
+				# shellcheck disable=SC2034
+				REPORTING_ANON_KEY=$(cat /root/upgrade-reporting-credentials) || true
+			else
+				log "WARNING: could not install the new reporting credentials; keeping the previous ones"
+				# restore the old key if the first mv succeeded but the second failed
+				if [ ! -f /root/upgrade-reporting-credentials ] && [ -f /root/upgrade-reporting-credentials.bkp ]; then
+					mv /root/upgrade-reporting-credentials.bkp /root/upgrade-reporting-credentials || true
+				fi
+			fi
 		else
-			rm $MOUNT_POINT/upgrade-reporting-credentials.target
+			rm -f "$MOUNT_POINT/upgrade-reporting-credentials.target" || true
 		fi
 	fi
 
@@ -889,7 +921,7 @@ trap cleanup ERR
 echo "running" >/tmp/pg-upgrade-status
 if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
 	log "initiate.sh started"
-	initiate_upgrade >>"$LOG_FILE" 2>&1 &
+	initiate_upgrade &
 else
 	rm -f /tmp/pg-upgrade-status
 	initiate_upgrade

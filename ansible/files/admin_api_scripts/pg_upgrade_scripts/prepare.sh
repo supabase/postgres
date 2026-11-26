@@ -14,7 +14,7 @@ SCRIPT_DIR=$(dirname -- "$0")
 # Each attempt overwrites the log. Failed attempts are shipped before the retry.
 LOG_FILE="/var/log/pg-upgrade-prepare.log"
 touch "$LOG_FILE"
-chmod 644 "$LOG_FILE"
+chmod 640 "$LOG_FILE"
 
 # From here on, everything written to stdout/stderr (log messages, but also
 # errors from systemctl, install, sync, etc.) is written to the log file.
@@ -43,11 +43,12 @@ on_exit() {
 
 	if [ "$rc" -eq 0 ]; then
 		log "prepare.sh ended with no errors"
-		ship_logs "$LOG_FILE" || log "Log upload failed (non-blocking)."
 	else
 		log "prepare.sh ended with errors"
-		ship_logs "$LOG_FILE" || log "Log upload failed (non-blocking)."
 	fi
+
+	ship_logs "$LOG_FILE" || log "Log upload failed (non-blocking)."
+
 	exit "$rc"
 }
 trap on_exit EXIT
@@ -76,14 +77,11 @@ if pgrep -x postgres >/dev/null; then
 	exit 1
 fi
 
-# copy the pgsodium root key with proper owner and permissions
-# (optional: initiate.sh also treats it as optional)
-if [ -f /etc/postgresql-custom/pgsodium_root.key ]; then
-	install -m 600 -o postgres -g postgres \
-		/etc/postgresql-custom/pgsodium_root.key /data/pgsodium_root.key
-else
-	log "WARNING: /etc/postgresql-custom/pgsodium_root.key not found; not copying it"
-fi
+# copy the pgsodium root key with proper owner and permissions not optional!
+# If the key is absent the upgrade proceeds without it on the target, and
+# pgsodium/Vault secrets become undecryptable.
+install -m 600 -o postgres -g postgres \
+	/etc/postgresql-custom/pgsodium_root.key /data/pgsodium_root.key
 
 # copy the anon key used to ship logs to the error_logs project
 # (optional: without it logs are simply not shipped, which must not block the upgrade)
