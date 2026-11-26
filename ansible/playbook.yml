@@ -191,6 +191,18 @@
         nix shell {{ nix_store_paths['supascan'] }} --command
         /tmp/ansible-playbook/ansible/files/supascan_ami.sh
         /tmp/ansible-playbook/audit-specs/baselines/$baseline
+      register: supascan
+      failed_when: false
+
+    - name: Print supascan output
+      when: stage2 and supascan.rc != 0
+      debug:
+        msg: "{{ supascan.stdout_lines + supascan.stderr_lines }}"
+
+    - name: Fail on supascan errors
+      when: stage2 and supascan.rc != 0
+      fail:
+        msg: supascan validation failed
 
     - name: Tune Swap
       when: stage2
