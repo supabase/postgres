@@ -4,7 +4,7 @@ The `site-env-15`, `site-env-17`, and `site-env-orioledb-17` package sets are de
 
 ## Publish
 
-`ami-release-nix.yml` uploads each store path as a string to the shared artifacts bucket, which is private, in the object `nix-catalog/<sha>/<system>/site-env-<major>`. Release branches also upload the git sha as a string to `nix-catalog/latest/<system>/site-env-<major>`. The AMI bake installs the store path passed in as `site_env_path` and runs `activate`.
+`ami-release-nix.yml` uploads each store path as a string to the shared artifacts bucket, which is private, in the object `nix-catalog/<sha>/<system>/site-env-<major>`. Release branches also upload the git sha as a string to `nix-catalog/latest/<system>/site-env-<major>`. The AMI bake installs the store path passed in as `site_env_path` and runs `activate`. It then removes the `site` link, so the profile is inactive and Postgres loads supautils from `$libdir`. The generation link `site-1-link` stays. `nix-env --profile /nix/var/nix/profiles/site --switch-generation 1` activates it.
 
 ## Update
 
