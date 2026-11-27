@@ -28,10 +28,10 @@ SELECT lo_from_bytea(81000,
   '\x00000001'::bytea||'\x61'::bytea||'\x00000001'::bytea||'\x31'::bytea ||  -- 'a' => '1'
   '\x00000001'::bytea||'\x61'::bytea||'\xffffffff'::bytea ||                  -- 'a' => NULL
   '\xffff'::bytea) AS loid;                         -- COPY trailer
-SELECT lo_export(81000, '/tmp/pg_regress_hstore_dup.bin') AS exported;
+SELECT lo_export(81000, 'pg_regress_hstore_dup.bin') AS exported;
 
 -- Must not crash the backend; the duplicate key is de-duplicated on receive.
-COPY hstore_dst FROM '/tmp/pg_regress_hstore_dup.bin' WITH (FORMAT binary);
+COPY hstore_dst FROM 'pg_regress_hstore_dup.bin' WITH (FORMAT binary);
 
 SELECT h AS received, akeys(h) AS keys FROM hstore_dst;
 

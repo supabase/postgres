@@ -3,10 +3,17 @@
   stdenv,
   writeTextFile,
   patchelf,
+  ncurses,
   psql_17_cli,
 }:
 let
   configDir = ./cli-config;
+
+  # glibc 2.42 re-versions cfgetospeed. The bundle runs on the host's glibc,
+  # so ship an ncurses that resolves the older symbol at runtime.
+  ncursesCompat = ncurses.overrideAttrs (old: {
+    patches = (old.patches or [ ]) ++ [ ./patches/ncurses-cfgetospeed-old-glibc-compat.patch ];
+  });
 
   receipt = writeTextFile {
     name = "cli-receipt";
@@ -218,7 +225,9 @@ stdenv.mkDerivation {
         break
       fi
     done
-
+    ${lib.optionalString stdenv.isLinux ''
+      cp -f ${ncursesCompat}/lib/libncursesw.so.6 $out/lib/libncursesw.so.6
+    ''}
     # Copy share directory
     if [ -d ${psql_17_cli.bin}/share ]; then
       cp -rL ${psql_17_cli.bin}/share/* $out/share/ 2>/dev/null || true

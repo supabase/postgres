@@ -8,12 +8,7 @@
         config.allowUnfree = true;
         overlays = [
           # Patch tzdata to 2026f until nixpkgs catches up.
-          # Drop once the pinned nixpkgs ships >= 2026f (the assertion below trips):
-          # remove both the tzdata and the vde2 overrides in this overlay.
-          #
-          # vde2 is only here because of the tzdata override causing wolfssl to be rebuilt.
-          # wolfssl's own test suite fails on the CI runners.
-          # vde2 only uses wolfssl for vde_cryptcab, which the VM tests don't need, so build vde2 without it.
+          # Drop once the pinned nixpkgs ships >= 2026f. The assertion below trips then.
           (
             final: prev:
             let
@@ -90,16 +85,6 @@
                 ];
               # node's test suite fails on darwin
               nodejs = prev.nodejs.overrideAttrs { doCheck = !prev.stdenv.hostPlatform.isDarwin; };
-              vde2 = prev.vde2.overrideAttrs (
-                old:
-                assert final.lib.assertMsg (
-                  prev.tzdata.version < version
-                ) "nixpkgs tzdata ${prev.tzdata.version} is not older than ${version}; remove the vde2 override";
-                {
-                  buildInputs = final.lib.remove final.wolfssl old.buildInputs;
-                  configureFlags = (old.configureFlags or [ ]) ++ [ "--disable-cryptcab" ];
-                }
-              );
             }
           )
           (

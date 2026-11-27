@@ -1,6 +1,5 @@
 {
   lib,
-  pkgs,
   cargo-pgrx,
   fetchCrate,
   makeRustPlatform,
@@ -8,11 +7,10 @@
   rustVersion ? "1.85.1",
 }:
 let
-  # TODO: remove once nixpkgs is bumped past NixOS/nixpkgs#512735
-  rustPlatform = import ./fix-cargo.nix { inherit pkgs; } (makeRustPlatform {
+  rustPlatform = makeRustPlatform {
     cargo = rust-bin.stable.${rustVersion}.default;
     rustc = rust-bin.stable.${rustVersion}.default;
-  });
+  };
 in
 {
   mkCargoPgrx =
@@ -28,11 +26,7 @@ in
       pname = if lib.versionOlder version "0.7.4" then "cargo-pgx" else "cargo-pgrx";
       inherit version;
 
-      # TODO: remove once nixpkgs is bumped past NixOS/nixpkgs#512735
-      src = fetchCrate {
-        inherit pname version hash;
-        registryDl = "https://static.crates.io/crates";
-      };
+      src = fetchCrate { inherit pname version hash; };
 
       cargoDeps = rustPlatform.fetchCargoVendor {
         inherit pname src version;
