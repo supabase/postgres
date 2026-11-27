@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-POSTGRES_BIN=$(readlink -f $(which postgres))
+POSTGRES_BIN=$(readlink -f "$(which postgres)")
 POSTGRES_DIR=$(dirname "$POSTGRES_BIN")
 WRAPPED="$POSTGRES_DIR/.postgres-wrapped"
 
