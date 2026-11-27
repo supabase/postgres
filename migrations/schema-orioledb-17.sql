@@ -451,6 +451,7 @@ CREATE FUNCTION extensions.set_graphql_placeholder() RETURNS event_trigger
         )
             returns jsonb
             language plpgsql
+            set search_path to ''
         as $$
             DECLARE
                 server_version float;
