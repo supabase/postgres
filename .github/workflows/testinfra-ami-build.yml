@@ -2,6 +2,12 @@ name: Testinfra Integration Tests
 
 on:
   workflow_call:
+    inputs:
+      system:
+        description: Build only the AMIs for this Nix system (x86_64-linux or aarch64-linux); empty builds both
+        required: false
+        default: ""
+        type: string
     secrets:
       DEV_AWS_ROLE:
         description: "AWS role for dev environment"
@@ -22,6 +28,7 @@ jobs:
   # counting as skipped. build only gets the AMIs whose ami-test-stamp is not in the binary cache yet,
   # and is skipped entirely when every stamp is cached.
   gen-matrix:
+    name: ☁️Matrix
     runs-on: blacksmith-2vcpu-ubuntu-2404
     outputs:
       matrix: ${{ steps.gen-matrix.outputs.matrix }}
@@ -44,6 +51,7 @@ jobs:
         env:
           CACHE_URL: https://nix-postgres-artifacts.s3.amazonaws.com
           GIT_SHA: ${{ github.sha }}
+          ONLY_SYSTEM: ${{ inputs.system }}
           PACKAGES_GIT_SHA: ${{ steps.resolve-git-sha.outputs.sha }}
         run: |
           set -euo pipefail
@@ -61,6 +69,9 @@ jobs:
           for version in $versions; do
             for target in amd64:x86_64-linux:blacksmith-2vcpu-ubuntu-2404 arm64:aarch64-linux:blacksmith-2vcpu-ubuntu-2404-arm; do
               IFS=: read -r arch system runner <<<"$target"
+              if [[ -n $ONLY_SYSTEM && $system != "$ONLY_SYSTEM" ]]; then
+                continue
+              fi
               stamp=$(nix eval --raw ".#packages.$system.ami-test-stamp-$version")
               if [[ $check_cache == true ]] && nix path-info --store "$CACHE_URL" "$stamp" &>/dev/null; then
                 echo "::notice::$version-$arch: already passed testinfra ($stamp), skipping"
@@ -77,7 +88,8 @@ jobs:
           echo "matrix=$matrix" >>"$GITHUB_OUTPUT"
           echo "should_run=$should_run" >>"$GITHUB_OUTPUT"
 
-  build:
+  ami:
+    name: ☁️${{ matrix.postgres_version }} ${{ matrix.system == 'aarch64-linux' && '🐧arm' || '🐧x86' }}
     needs: gen-matrix
     if: needs.gen-matrix.outputs.should_run == 'true'
     strategy:
@@ -203,7 +215,8 @@ jobs:
         run: ci/cleanup-ami-build-resources.sh --delete-amis "${{ matrix.postgres_version }}-${{ matrix.arch }}-${{ github.run_id }}"
 
   report-disk-usage:
-    needs: build
+    name: ☁️Disk Usage
+    needs: ami
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - name: Download AMI disk usage

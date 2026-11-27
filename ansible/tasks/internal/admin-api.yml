@@ -49,6 +49,13 @@
     dest: /opt
     owner: adminapi
 
+- name: adminapi - binary ownership
+  file:
+    path: /opt/supabase-admin-api
+    owner: adminapi
+    group: root
+    mode: "0755"
+
 - name: adminapi - config dir
   file:
     path: /etc/adminapi

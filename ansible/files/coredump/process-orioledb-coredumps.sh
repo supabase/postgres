@@ -259,15 +259,22 @@ main() {
 	enforce_retention
 
 	# Enumerate via coredumpctl and filter out non-postgres cores
+	# Re-list after each pass: the path unit drops events while this runs.
 	local rc=0
-	local pid
-	while read -r pid; do
-		[ -z "$pid" ] && continue
-		process_one "$pid" || {
-			log "pid ${pid}: processing failed, will retry on next run"
-			rc=1
-		}
-	done < <(coredumpctl --no-pager --json=short list 2>/dev/null | jq -r '.[] | select(.corefile == "present" and (.exe | endswith("/.postgres-wrapped"))) | .pid')
+	local pid n=-1
+	local -A tried=()
+	while [ "$n" -ne "${#tried[@]}" ]; do
+		n=${#tried[@]}
+		while read -r pid; do
+			[ -z "$pid" ] && continue
+			[ -n "${tried[$pid]:-}" ] && continue
+			tried[$pid]=1
+			process_one "$pid" || {
+				log "pid ${pid}: processing failed, will retry on next run"
+				rc=1
+			}
+		done < <(coredumpctl --no-pager --json=short list 2>/dev/null | jq -r '.[] | select(.corefile == "present" and (.exe | endswith("/.postgres-wrapped"))) | .pid')
+	done
 
 	return "$rc"
 }

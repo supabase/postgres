@@ -207,15 +207,17 @@ cp /tmp/tmp.<id>/regression_output/results/z_multigres-orioledb-17_*.out nix/tes
 
 ## Updating multigres
 
-1. run `nix flake update multigres` from root of repo (it should only change `flake.lock` file)
-2. `git add flake.lock`
-3. `nix build .#pgctld` and update `nix/packages/pgctld.nix` `vendorHash` with returned value
-   example `vendorHash = "sha256-cqSd6Dv0WYOVwg7AE1tZPh9uzsjDG32gF6eJzARsHo8=";`
-4. `git add nix/packages/pgctld.nix`
-5. run the tests locally with
+Renovate opens a PR that bumps the commit pinned for the `multigres` input in `flake.nix`.
+The `renovate-rehash` workflow then updates `flake.lock` and the `pgctld` `vendorHash` on that PR.
+To do it by hand, follow these steps.
+
+1. change the commit id in the `multigres.url` line of `flake.nix` to the one you want
+2. `nix run .#rehash -- flake.nix` (it runs `nix flake lock` and updates the `pgctld` `vendorHash`)
+3. `git add flake.nix flake.lock nix/packages/pgctld.nix`
+4. run the tests locally with
    a. `nix run .#docker-image-test -- --target variant-17 Dockerfile-multigres`
    b. `nix run .#docker-image-test -- --target variant-orioledb-17 Dockerfile-multigres`
-6. release the images by incrementing these values in `ansible/postgres_release.yml` by 1
+5. release the images by incrementing these values in `ansible/postgres_release.yml` by 1
 
 # Full version strings for each major version
 

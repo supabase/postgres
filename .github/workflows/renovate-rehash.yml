@@ -1,7 +1,12 @@
-name: Renovate Refresh Ansible Checksums
+name: Renovate Rehash
 
-# Renovate bumps a version in ansible/vars.yml but cannot work out the new checksums.
-# This workflow works them out and pushes them to the PR branch.
+# Renovate bumps a version but cannot work out the new checksum or hash.
+# This workflow refreshes the hashes and checksums for the files the PR changed.
+# It runs `nix run .#rehash`, which decides what to run for each file.
+# It only starts for changes to ansible/vars.yml, flake.nix or a .nix file under nix/.
+# The job below skips any PR that Renovate did not open.
+# We assume every Renovate PR is a dependency update.
+# It pushes what that command changes to the PR branch.
 #
 # The Mend-hosted Renovate app cannot do this itself.
 # It only allows a short fixed list of post-upgrade commands.
@@ -23,13 +28,15 @@ on:
   pull_request:
     paths:
       - ansible/vars.yml
+      - flake.nix
+      - nix/**.nix
 
 concurrency:
-  group: renovate-refresh-ansible-checksums-${{ github.event.pull_request.number }}
+  group: renovate-rehash-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
-  refresh-checksums:
+  rehash:
     if: >-
       github.event.pull_request.user.login == 'renovate[bot]' &&
       github.event.pull_request.head.repo.full_name == github.repository
@@ -48,29 +55,18 @@ jobs:
       - name: Install Nix
         uses: $/.github/actions/install-nix
 
-      - name: Refresh checksums
-        id: refresh
+      - name: Rehash
+        id: rehash
         env:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
           set -euo pipefail
 
-          # Find the tools whose *_release line this PR changed.
-          changed=$(git diff -U0 "origin/$BASE_REF...HEAD" -- ansible/vars.yml | sed -En 's/^\+([a-z_]*)_release: *"?([^" #]*).*/\1 \2/p')
-          if [[ -z $changed ]]; then
-            echo "No *_release line changed. Nothing to do."
-            echo "changed=false" >>"$GITHUB_OUTPUT"
-            exit 0
-          fi
+          readarray -t files < <(git diff --name-only "origin/$BASE_REF...HEAD")
+          nix run .#rehash -- "${files[@]}"
 
-          while read -r tool version; do
-            echo "::group::$tool $version"
-            nix run .#update-ansible-artifacts -- "$tool" "$version"
-            echo "::endgroup::"
-          done <<<"$changed"
-
-          if git diff --quiet -- ansible/vars.yml; then
-            echo "Checksums are already up to date."
+          if git diff --quiet; then
+            echo "Nothing to rehash."
             echo "changed=false" >>"$GITHUB_OUTPUT"
             exit 0
           fi
@@ -80,21 +76,21 @@ jobs:
           # The email must match gitIgnoredAuthors in renovate.json5.
           git config user.name "sb-postgres-bot[bot]"
           git config user.email "306028907+sb-postgres-bot[bot]@users.noreply.github.com"
-          git add ansible/vars.yml
-          git commit -m "chore(ansible): refresh artifact checksums"
+          git add --update
+          git commit -m "Refresh hashes and checksums for Renovate update"
           echo "changed=true" >>"$GITHUB_OUTPUT"
 
       - name: Generate app token
-        if: steps.refresh.outputs.changed == 'true'
+        if: steps.rehash.outputs.changed == 'true'
         id: app-token
-        uses: actions/create-github-app-token@v3.3.0
+        uses: actions/create-github-app-token@v3.4.0
         with:
           client-id: ${{ secrets.UPDATE_APP_ID }}
           private-key: ${{ secrets.UPDATE_APP_PRIVATE_KEY }}
           permission-contents: write
 
-      - name: Push updated checksums
-        if: steps.refresh.outputs.changed == 'true'
+      - name: Push rehashed files
+        if: steps.rehash.outputs.changed == 'true'
         env:
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
           APP_TOKEN: ${{ steps.app-token.outputs.token }}

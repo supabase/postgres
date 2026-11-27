@@ -8,13 +8,14 @@
 }:
 pgbackrest.overrideAttrs (
   finalAttrs: prevAttrs: {
-    version = "2.60.0";
+    # renovate: datasource=github-tags depName=pgbackrest packageName=pgbackrest/pgbackrest extractVersion=^release/(?<version>.+)$
+    version = "2.60.1";
 
     src = fetchFromGitHub {
       owner = "pgbackrest";
       repo = "pgbackrest";
       rev = "release/${finalAttrs.version}";
-      hash = "sha256-3CpKpkCA41OfdwBXBD8MUmypA+eVH3s4BL7ezzH9PqI=";
+      hash = "sha256-F/BAvdmUhXavvj75IY7lN+WhK4o4WwSH5wrDOsYHQcw=";
     };
 
     # 2.60.0 generates code at build time with build/build.py, which needs PyYAML

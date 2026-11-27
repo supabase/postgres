@@ -31,7 +31,7 @@ jobs:
       contents: read
       packages: write
       id-token: write
-    uses: supabase/cli/.github/workflows/mirror-image.yml@d4fc0e5bbd65b3ade802e956d6df1cddab2e65a3 # v3.1.0
+    uses: supabase/cli/.github/workflows/mirror-image.yml@c3c7a586b11b6605358177efabbc1b1cb7589b23 # v3.2.0
     with:
       # PostgREST is mirrored to ECR with a -middleware suffix (also updated in cli-smoke-test.nix for the "rest-version")
       image: supabase/postgrest:v${{ needs.version.outputs.postgrest_release }}-middleware
