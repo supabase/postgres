@@ -49,6 +49,7 @@
       imports = [
         nix/apps.nix
         nix/checks.nix
+        nix/ci-build-inputs.nix
         nix/config.nix
         nix/devShells.nix
         nix/fmt.nix

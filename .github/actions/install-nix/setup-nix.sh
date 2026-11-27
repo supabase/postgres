@@ -35,6 +35,10 @@ cat >"$tmpdir/nix.conf" <<-EOF
 	max-jobs = 5
 EOF
 
+if [[ -d /mnt/nix-store-disk ]]; then
+	echo 'extra-substituters = local?root=/mnt/nix-store-disk' >>"$tmpdir/nix.conf"
+fi
+
 if [[ -e /dev/kvm ]]; then
 	sudo chown runner /dev/kvm
 	sudo chmod 666 /dev/kvm

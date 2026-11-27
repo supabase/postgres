@@ -1,0 +1,54 @@
+name: Nix store disk
+
+# The only workflow that commits the disk. CI jobs mount it with commit: false.
+
+on:
+  push:
+    branches:
+      - develop
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [blacksmith-8vcpu-ubuntu-2404, blacksmith-8vcpu-ubuntu-2404-arm]
+    runs-on: ${{ matrix.runner }}
+    concurrency: nix-store-disk-${{ matrix.runner }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v7.0.1
+
+      - name: Install nix
+        uses: $/.github/actions/install-nix
+
+      - name: Mount nix store disk
+        uses: useblacksmith/stickydisk@v1.8.0
+        with:
+          key: nix-store-${{ runner.arch }}
+          path: /mnt/nix-store-disk
+
+      - name: Substitute build inputs onto the disk
+        run: |
+          set -euo pipefail
+          disk=/mnt/nix-store-disk
+          store="local?root=$disk"
+          roots=$disk/nix/var/nix/gcroots/ci
+          paths=$RUNNER_TEMP/paths
+          sudo chown "$(id -u)" "$disk"
+
+          nix eval --json ".#ciBuildInputs.$(nix config show system)" | jq --raw-output '.[]' >"$paths"
+
+          xargs --arg-file="$paths" --no-run-if-empty \
+            nix build --store "$store" --max-jobs 0 --keep-going --no-link \
+            || echo "::warning::some build inputs could not be substituted"
+
+          rm -rf "$roots"
+          mkdir -p "$roots"
+          xargs --arg-file="$paths" ln --symbolic --target-directory="$roots"
+          nix store gc --store "$store"
+          df --human-readable "$disk"

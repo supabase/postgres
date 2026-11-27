@@ -111,6 +111,14 @@ jobs:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
         uses: actions/checkout@v7.0.1
+      - name: Mount nix store disk
+        if: ${{ matrix.attr != '' && runner.os == 'Linux' }}
+        continue-on-error: true
+        uses: useblacksmith/stickydisk@v1.8.0
+        with:
+          key: nix-store-${{ runner.arch }}
+          path: /mnt/nix-store-disk
+          commit: false
       - name: Install nix
         if: ${{ matrix.attr != '' }}
         uses: $/.github/actions/install-nix
@@ -140,6 +148,14 @@ jobs:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
         uses: actions/checkout@v7.0.1
+      - name: Mount nix store disk
+        if: ${{ matrix.attr != '' && runner.os == 'Linux' }}
+        continue-on-error: true
+        uses: useblacksmith/stickydisk@v1.8.0
+        with:
+          key: nix-store-${{ runner.arch }}
+          path: /mnt/nix-store-disk
+          commit: false
       - name: Install nix
         if: ${{ matrix.attr != '' }}
         uses: $/.github/actions/install-nix
@@ -167,6 +183,14 @@ jobs:
       - name: Checkout Repo
         if: ${{ matrix.attr != '' }}
         uses: actions/checkout@v7.0.1
+      - name: Mount nix store disk
+        if: ${{ matrix.attr != '' && runner.os == 'Linux' }}
+        continue-on-error: true
+        uses: useblacksmith/stickydisk@v1.8.0
+        with:
+          key: nix-store-${{ runner.arch }}
+          path: /mnt/nix-store-disk
+          commit: false
       - name: Install nix
         if: ${{ matrix.attr != '' }}
         uses: $/.github/actions/install-nix
