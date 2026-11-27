@@ -98,6 +98,7 @@ expected_results = {
         {"groupname": "supabase-admin-agent", "username": "supabase-admin-agent"},
         {"groupname": "admin", "username": "supabase-admin-agent"},
         {"groupname": "salt", "username": "supabase-admin-agent"},
+        {"groupname": "wal-g", "username": "supabase-admin-agent"},
     ],
 }
 
