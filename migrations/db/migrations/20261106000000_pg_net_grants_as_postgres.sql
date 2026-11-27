@@ -3,10 +3,11 @@
 -- Goal: let postgres manage who can use pg_net.
 --
 -- Until now the pg_net grants for anon, authenticated and service_role were made by
--- supabase_admin. In Postgres only the grantor can revoke a grant, so a customer who wanted one of
--- those roles out of pg_net could not do it. This led to a lot of support tickets. After this
--- migration those grants come from postgres: the customer can revoke them, and a role revoked by
--- the customer stays revoked.
+-- supabase_admin. A grant can be revoked by its grantor, a superuser, the object owner or a role
+-- that inherits the grantor. The customer's postgres is none of those for a grant by
+-- supabase_admin, so a customer who wanted one of those roles out of pg_net could not do it. This
+-- led to a lot of support tickets. After this migration those grants come from postgres: the
+-- customer can revoke them, and a role revoked by the customer stays revoked.
 --
 -- extensions.apply_pg_net_grants() is the routine which does all of it. It is the only place that
 -- grants pg_net access. It runs:
@@ -65,6 +66,18 @@ begin
     foreach http_function in array http_functions loop
         execute format('grant execute on function %s to postgres with grant option', http_function);
     end loop;
+
+    --    pg_upgrade used to make http_get and http_post SECURITY DEFINER with search_path = net, so
+    --    the API roles could queue a request on a pg_net that gave PUBLIC nothing on its tables.
+    --    From 0.12.0 PUBLIC holds the table and sequence grants, so the functions run as the
+    --    caller like on every other project, and a trigger on the queue no longer runs as the
+    --    extension owner.
+    if (select string_to_array(extversion, '.')::int[] >= array[0, 12, 0]
+        from pg_extension where extname = 'pg_net') then
+        foreach http_function in array http_functions loop
+            execute format('alter function %s security invoker reset search_path', http_function);
+        end loop;
+    end if;
 
     --    pg_net 1.0.0 stops granting worker_restart to PUBLIC and leaves it to the extension owner.
     --    Here the owner is supabase_admin, and the customer administers pg_net as postgres: changes

@@ -209,17 +209,17 @@ select * from net_acl;
  schema   | net         | USAGE          | supabase_functions_admin | supabase_admin | f
 (21 rows)
 
--- 5. upgraded project: the upgrade scripts make http_get and http_post SECURITY DEFINER,
---    revoke PUBLIC on them and grant the five roles as supabase_admin. The grants move to
---    postgres, function security is left alone
+-- 5. upgraded project: the upgrade scripts used to make http_get and http_post SECURITY DEFINER
+--    with search_path = net, revoke PUBLIC on them and grant the five roles as supabase_admin. The
+--    grants move to postgres and the functions go back to SECURITY INVOKER
 drop extension pg_net;
 create extension pg_net;
 set role postgres;
 revoke usage on schema net from anon, authenticated, service_role;
 revoke execute on function net.http_get, net.http_post, net.http_delete from anon, authenticated, service_role;
 reset role;
-alter function net.http_get security definer;
-alter function net.http_post security definer;
+alter function net.http_get security definer set search_path = net;
+alter function net.http_post security definer set search_path = net;
 revoke all on function net.http_get, net.http_post from public;
 grant usage on schema net to supabase_functions_admin, postgres, anon, authenticated, service_role;
 grant execute on function net.http_get, net.http_post to supabase_functions_admin, postgres, anon, authenticated, service_role;
@@ -271,17 +271,17 @@ select * from net_access;
  supabase_functions_admin | t            | t
 (5 rows)
 
-select p.proname, p.prosecdef
+select p.proname, p.prosecdef, p.proconfig
 from pg_proc p
 join pg_namespace n on n.oid = p.pronamespace
 where n.nspname = 'net'
   and p.proname in ('http_get', 'http_post', 'http_delete')
 order by p.proname;
-   proname   | prosecdef 
--------------+-----------
- http_delete | f
- http_get    | t
- http_post   | t
+   proname   | prosecdef | proconfig 
+-------------+-----------+-----------
+ http_delete | f         | 
+ http_get    | f         | 
+ http_post   | f         | 
 (3 rows)
 
 -- 6. drop and recreate the extension as postgres, the way a project does it. supautils runs the
@@ -324,7 +324,8 @@ select * from net_acl;
  schema   | net         | USAGE          | supabase_functions_admin | supabase_admin | f
 (29 rows)
 
--- 6.1 a helper the customer replaced is not what runs: the routine drops and recreates it
+-- 6.1 a helper the customer replaced is not what runs. The routine drops and recreates it before
+--     the call, so the body planted here never raises
 set role postgres;
 create or replace function extensions.grant_pg_net_api_access(api_role name, http_functions regprocedure[])
     returns void language plpgsql as $$ begin raise exception 'customer body ran as %', current_user; end $$;
@@ -342,8 +343,12 @@ select prosecdef, proowner::regrole as owner
  t         | postgres
 (1 row)
 
--- 7. anon can queue a request with its grants from postgres. Then wait for the worker to finish
---    it, so it cannot fire a trigger that a later test plants on the response table
+-- 7. anon can queue a request with its grants from postgres.
+--
+--    net.http_get only queues the request. The background worker sends it and inserts the response
+--    on its own time, possibly after this file is done. pg_net_worker_privileges.sql runs next and
+--    plants a trigger on net._http_response. So wait here until the response of this request has
+--    been inserted, and that trigger only ever sees the one request that test adds itself
 select value as port from test_config where key = 'http_mock_port' \gset
 set role anon;
 select net.http_get('http://localhost:' || :'port' || '/get') as request_id \gset
@@ -435,17 +440,19 @@ select * from net_acl;
  schema   | net         | USAGE          | supabase_functions_admin | supabase_admin | f
 (29 rows)
 
-
 -- 10. postgres can restart the worker and grant that onward. pg_net 1.0.0 stops granting it to
 --     PUBLIC, and the customer administers pg_net as postgres
-select case a.grantee when 0 then 'PUBLIC' else a.grantee::regrole::text end as grantee,
-       a.grantor::regrole::text as grantor,
-       a.is_grantable
-from pg_proc p
-join pg_namespace n on n.oid = p.pronamespace
-cross join lateral aclexplode(p.proacl) a
-where n.nspname = 'net'
-  and p.proname = 'worker_restart'
+select grantee, grantor, is_grantable
+from (
+    select case a.grantee when 0 then 'PUBLIC' else a.grantee::regrole::text end as grantee,
+           a.grantor::regrole::text as grantor,
+           a.is_grantable
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    cross join lateral aclexplode(p.proacl) a
+    where n.nspname = 'net'
+      and p.proname = 'worker_restart'
+) x
 order by grantee collate "C";
     grantee     |    grantor     | is_grantable 
 ----------------+----------------+--------------
