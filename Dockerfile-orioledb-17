@@ -159,7 +159,7 @@ COPY ansible/files/pgbouncer_config/pgbouncer_auth_schema.sql /docker-entrypoint
 COPY ansible/files/stat_extension.sql /docker-entrypoint-initdb.d/migrations/00-extension.sql
 
 # Enable orioledb extension first
-RUN echo "CREATE EXTENSION orioledb;" > /docker-entrypoint-initdb.d/init-scripts/00-pre-init.sql && \
+RUN printf 'SET ROLE supabase_admin;\nCREATE EXTENSION orioledb;\n' >/docker-entrypoint-initdb.d/init-scripts/00-pre-init.sql && \
     chown postgres:postgres /docker-entrypoint-initdb.d/init-scripts/00-pre-init.sql
 
 # Add entrypoint script
