@@ -54,6 +54,7 @@ fi
 
 # Minimal fallback so that "log" exists even if common.sh cannot be sourced.
 # common.sh redefines it with the real implementation.
+# shellcheck disable=SC2329
 log() { echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') $*"; }
 
 # Source the shared helpers (log and ship_logs functions)
@@ -227,14 +228,7 @@ cleanup() {
 
 		for name in "${CURRENT_ATTEMPT_DIRS[@]}"; do
 			for file in "/var/log/pg_upgrade_output.d/$name"/log/*; do
-				if [ -f "$file" ]; then
-					if [ -s "$file" ]; then
-						log "pg_upgrade_output log file: $file:"
-						cat "$file" >>"$LOG_FILE" 2>/dev/null || true
-					else
-						log "pg_upgrade_output log file: $file (empty)"
-					fi
-				fi
+				append_output_file "pg_upgrade_output log file" "$file" "$LOG_FILE"
 			done
 		done
 
@@ -244,14 +238,7 @@ cleanup() {
 
 		for name in "${CURRENT_ATTEMPT_DIRS[@]}"; do
 			for file in "/var/log/pg_upgrade_output.d/$name"/*.txt; do
-				if [ -f "$file" ]; then
-					if [ -s "$file" ]; then
-						log "pg_upgrade_output report filename : $file:"
-						cat "$file" >>"$LOG_FILE" 2>/dev/null || true
-					else
-						log "pg_upgrade_output report filename : $file (empty)"
-					fi
-				fi
+				append_output_file "pg_upgrade_output report filename" "$file" "$LOG_FILE"
 			done
 		done
 

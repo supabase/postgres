@@ -6,9 +6,6 @@
 #staging/prod
 REPORTING_PROJECT_REF="ihmaxnjpcccasmrbkpvo"
 
-#localdev
-#REPORTING_PROJECT_REF="ditigwgjchkdxjxijzza"
-
 REPORTING_CREDENTIALS_FILE="/root/upgrade-reporting-credentials"
 
 REPORTING_ANON_KEY=""
@@ -147,6 +144,48 @@ function conninfo_for_db {
 	printf "dbname='%s'" "$d"
 }
 
+# Append a pg_upgrade output file to a destination file (normally the script's
+# log file, which ship_logs later POSTs in a single request).
+#
+# Usage: append_output_file <label> <file> <dest>
+#
+# To avoid edge cases where pg_upgrade log outputs are very big files, we want
+# to truncate the bigger files, finding that the 200 first plus the 200 last
+# lines are giving most probably the more usefull information.
+#
+# There a 3 cases where the file is empty, complete or truncated:
+#   - empty file:      "<label>: <file> (empty)"
+#   - up to 400 lines: "<label>: <file> (full content)"
+#   - over 400 lines:  "<label>: <file> (truncated to head 400 + tail 400)"
+function append_output_file {
+	local label=$1 file=$2 dest=$3
+	local max_lines=400 head_lines=200 tail_lines=200
+	local nb_lines
+
+	if [ ! -f "$file" ]; then
+		return 0
+	fi
+
+	if [ ! -s "$file" ]; then
+		log "${label}: ${file} (empty)"
+		return 0
+	fi
+
+	nb_lines=$(wc -l <"$file" | tr -d ' ')
+
+	if ((nb_lines <= max_lines)); then
+		log "${label}: ${file} (full content)"
+		cat "$file" >>"$dest" 2>/dev/null || true
+	else
+		log "${label}: ${file} (truncated to head ${head_lines} + tail ${tail_lines})"
+		{
+			head -n "$head_lines" "$file"
+			echo "[... file too big, truncated to first ${head_lines} lines + last ${tail_lines} lines ...]"
+			tail -n "$tail_lines" "$file"
+		} >>"$dest" 2>/dev/null || true
+	fi
+}
+
 function ship_logs {
 	LOG_FILE=$1
 
@@ -167,6 +206,8 @@ function ship_logs {
 
 	HOSTNAME=$(hostname)
 	DERIVED_REF="${HOSTNAME##*-}"
+
+	# we only ship the last megabyte of the log file
 
 	tail -c 1048576 "${LOG_FILE}" |
 		jq -Rs --arg ref "${DERIVED_REF}" --arg step completion '{ref: $ref, step: $step, content: .}' |
