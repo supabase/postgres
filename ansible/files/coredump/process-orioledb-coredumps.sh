@@ -252,6 +252,16 @@ process_one() {
 	fi
 }
 
+list_pids() {
+	local out
+	for _ in {1..10}; do
+		out=$(coredumpctl --no-pager --json=short list 2>/dev/null || true)
+		[[ -z $out ]] || jq -e . >/dev/null 2>&1 <<<"$out" && break
+		sleep 2
+	done
+	jq -r '.[] | select(.corefile == "present" and (.exe | endswith("/.postgres-wrapped"))) | .pid' <<<"$out"
+}
+
 main() {
 	mkdir -p "$STATE_DIR" "$OUTPUT_DIR" "$QUARANTINE_DIR"
 	chmod 700 "$STATE_DIR" "$OUTPUT_DIR" "$QUARANTINE_DIR"
@@ -273,7 +283,7 @@ main() {
 				log "pid ${pid}: processing failed, will retry on next run"
 				rc=1
 			}
-		done < <(coredumpctl --no-pager --json=short list 2>/dev/null | jq -r '.[] | select(.corefile == "present" and (.exe | endswith("/.postgres-wrapped"))) | .pid')
+		done < <(list_pids)
 	done
 
 	return "$rc"
