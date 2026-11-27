@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+const DiscoveryPolicy = "file-discovery.yml"
+
 // Spec categories
 var (
 	CriticalSpecs = []string{
@@ -110,6 +112,18 @@ func (v *Validator) Run() (*Result, error) {
 		}
 	}
 
+	discoveryResult := v.runDiscovery()
+	result.Specs = append(result.Specs, discoveryResult)
+	v.printSpecResult(discoveryResult)
+	if discoveryResult.Skipped {
+		result.CriticalSkipped++
+	} else if discoveryResult.Passed {
+		result.CriticalPassed++
+	} else {
+		result.CriticalFailed++
+		result.FailedCritical = append(result.FailedCritical, discoveryResult.Spec)
+	}
+
 	fmt.Println()
 	fmt.Println("============================================================")
 	fmt.Println("ADVISORY CHECKS (informational)")
@@ -208,7 +222,7 @@ func (v *Validator) findGoss() (string, error) {
 }
 
 func (v *Validator) runSpec(specFile, category, gossPath string) SpecResult {
-	specPath := filepath.Join(v.opts.BaselinesDir, specFile)
+	specPath := v.resolve(specFile)
 	specName := strings.TrimSuffix(specFile, ".yml")
 
 	result := SpecResult{
@@ -217,7 +231,7 @@ func (v *Validator) runSpec(specFile, category, gossPath string) SpecResult {
 	}
 
 	// Check if spec file exists
-	if _, err := os.Stat(specPath); os.IsNotExist(err) {
+	if specPath == "" {
 		result.Skipped = true
 		return result
 	}
@@ -242,6 +256,36 @@ func (v *Validator) runSpec(specFile, category, gossPath string) SpecResult {
 	}
 
 	return result
+}
+
+func (v *Validator) runDiscovery() SpecResult {
+	result := SpecResult{Spec: "file-discovery", Category: "critical"}
+
+	policy := v.resolve(DiscoveryPolicy)
+	if policy == "" {
+		result.Skipped = true
+		return result
+	}
+	self, _ := os.Executable()
+
+	var out bytes.Buffer
+	cmd := exec.Command(self, "discover", policy)
+	cmd.Stdout, cmd.Stderr = &out, &out
+	result.Error = cmd.Run()
+	result.Passed = result.Error == nil
+	result.Output = out.String()
+	return result
+}
+
+// resolve looks in the baselines directory, then its parent.
+func (v *Validator) resolve(name string) string {
+	for _, dir := range []string{v.opts.BaselinesDir, filepath.Dir(v.opts.BaselinesDir)} {
+		p := filepath.Join(dir, name)
+		if _, err := os.Stat(p); err == nil {
+			return p
+		}
+	}
+	return ""
 }
 
 func (v *Validator) printSpecResult(r SpecResult) {

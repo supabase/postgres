@@ -32,6 +32,7 @@ Critical specs (must pass):
   - service.yml, user.yml, group.yml, mount.yml, package.yml
   - files-security.yml, files-ssl.yml
   - files-postgres-config.yml, files-postgres-data.yml
+  - file-discovery.yml (filesystem scan, runs when present)
 
 Advisory specs (informational):
   - kernel-param.yml, files-*.yml (non-critical paths)

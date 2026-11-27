@@ -1,0 +1,18 @@
+# Policy for the Docker images. They are Alpine, so the AMI exceptions do not apply.
+# required: set by Alpine or Nix. Keep.
+roots: [/etc, /opt, /data, /var/lib]
+file_modes: ["0644", "0640", "0600", "0440", "0755"]
+dir_modes: ["0755", "0750", "0700"]
+exceptions:
+  # required: setuid binaries shipped by the Alpine shadow package
+  /usr/bin/chage: [setuid]
+  /usr/bin/chfn: [setuid]
+  /usr/bin/chsh: [setuid]
+  /usr/bin/expiry: [setuid]
+  /usr/bin/gpasswd: [setuid]
+  /usr/bin/passwd: [setuid]
+  /usr/sbin/unix_chkpwd: [setuid]
+
+  # required: Alpine and Nix defaults
+  /etc/network/if-up.d/dad: [group-writable, mode]
+  /nix/var/nix/gc-socket/socket: [world-writable, group-writable]
