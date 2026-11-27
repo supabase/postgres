@@ -21,6 +21,15 @@
       };
 
       inherit (self'.packages) getkey-script;
+
+      collation = import ./tests/collation { inherit pkgs; };
+      # Databases created since 15.14.1.072 / 17.6.1.072 record glibc 2.40
+      # and ICU 75.1 as their collation versions. A library that sorts
+      # differently leaves their indexes mis-ordered.
+      reference = import (builtins.fetchTarball {
+        url = "https://releases.nixos.org/nixos/unstable/nixos-26.05pre921484.fb7944c166a3/nixexprs.tar.xz";
+        sha256 = "sha256-3xDI4xtzovwqE/eAxCwmXxUqBg6Yoam2L1u0IwRNhW4=";
+      }) { inherit (pkgs.stdenv.hostPlatform) system; };
     in
     {
       checks =
@@ -994,6 +1003,17 @@
             assert check "postgresql_15" self'.packages.postgresql_15.stdenv.cc.libc.name;
             assert check "postgresql_17" self'.packages.postgresql_17.stdenv.cc.libc.name;
             pkgs.runCommand "collation-version-check" { } "touch $out";
+          glibc-collation = collation.compare reference pkgs;
+          ubuntu-24-04-collation = collation.compareUbuntu "24.04" reference pkgs;
+          ubuntu-20-04-collation = collation.compareUbuntu "20.04" reference pkgs;
+          icu-pin = collation.icuPin {
+            inherit reference;
+            postgresqls = with self'.packages; [
+              postgresql_15
+              postgresql_17
+              postgresql_orioledb-17
+            ];
+          };
         };
     };
 }
