@@ -155,10 +155,6 @@ function setup_chroot_environment {
 	mount /dev/xvdc /mnt/tmp
 	chmod 777 /mnt/tmp
 
-	# Copy apparmor profiles
-	chmod 644 /tmp/apparmor_profiles/*
-	cp -r /tmp/apparmor_profiles /mnt/tmp/
-
 	# Copy migrations
 	cp -r /tmp/migrations /mnt/tmp/
 
