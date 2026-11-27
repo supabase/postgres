@@ -596,6 +596,14 @@
       "postgresql": ["15", "17"],
       "revision": "2.1.0",
       "hash": "sha256-STJVvvrLVLe1JevNu6u6EftzAWv+X+J8lu66su7Or2s="
+    },
+    "2.4": {
+      "postgresql": [
+        "15",
+        "17"
+      ],
+      "revision": "2.4.0",
+      "hash": "sha256-wwqx+e9wDR35tMoNfbi1JdPknOIcxSZqh8yVobyWwcs="
     }
   },
   "pgtap": {

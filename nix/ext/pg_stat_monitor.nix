@@ -3,6 +3,8 @@
   stdenv,
   fetchFromGitHub,
   postgresql,
+  openssl,
+  krb5,
   buildEnv,
   makeWrapper,
   switch-ext-version,
@@ -39,7 +41,11 @@ let
     stdenv.mkDerivation rec {
       inherit pname version;
 
-      buildInputs = [ postgresql ];
+      buildInputs = [
+        postgresql
+        openssl
+        krb5
+      ];
 
       src = fetchFromGitHub {
         owner = "percona";
@@ -70,7 +76,12 @@ let
           ln -sfn ${pname}-${latestVersion}${postgresql.dlSuffix} $out/lib/${pname}${postgresql.dlSuffix}
           cp *.sql $out/share/postgresql/extension
         else
-          mv ./pg_stat_monitor--${version}.sql.in $out/share/postgresql/extension/pg_stat_monitor--${version}.sql
+          # Older versions contribute only their library and control file; the
+          # latest version provides all SQL scripts. Tags that ship a versioned
+          # .sql.in (e.g. 1.0.x) still get it installed as their install script.
+          if [[ -f ./${pname}--${version}.sql.in ]]; then
+            mv ./${pname}--${version}.sql.in $out/share/postgresql/extension/${pname}--${version}.sql
+          fi
         fi
       '';
 
