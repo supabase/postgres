@@ -42,27 +42,30 @@ let
 
   # Process the ansible config files into a derivation with @dataDir@ placeholders
   processAnsibleConfig =
-    { majorVersion }:
+    {
+      majorVersion,
+      configDir ? ansibleConfigDir,
+    }:
     pkgs.pkgsLinux.runCommand "processed-postgresql-config-${majorVersion}" { } ''
       mkdir -p $out/conf.d $out/extension-custom-scripts
 
       # Copy ansible config files (make writable so we can append/modify later)
-      cp ${ansibleConfigDir}/pg_hba.conf.j2 $out/pg_hba.conf
-      cp ${ansibleConfigDir}/pg_ident.conf.j2 $out/pg_ident.conf
+      cp ${configDir}/pg_hba.conf.j2 $out/pg_hba.conf
+      cp ${configDir}/pg_ident.conf.j2 $out/pg_ident.conf
       chmod u+w $out/pg_hba.conf $out/pg_ident.conf
 
       # Copy conf.d
-      cp -r ${ansibleConfigDir}/conf.d/* $out/conf.d/ || true
+      cp -r ${configDir}/conf.d/* $out/conf.d/ || true
 
       # Copy read-replica config
-      cp ${ansibleConfigDir}/custom_read_replica.conf $out/read-replica.conf
+      cp ${configDir}/custom_read_replica.conf $out/read-replica.conf
 
       # Copy extension custom scripts
       cp -r ${extensionCustomScriptsDir}/* $out/extension-custom-scripts/
 
       # Process supautils.conf: substitute extension_custom_scripts_path
       sed "s|supautils.extension_custom_scripts_path = '/etc/postgresql-custom/extension-custom-scripts'|supautils.extension_custom_scripts_path = '@dataDir@/extension-custom-scripts'|" \
-        ${ansibleConfigDir}/supautils.conf.j2 > $out/supautils.conf
+        ${configDir}/supautils.conf.j2 > $out/supautils.conf
 
       # Process postgresql.conf with all required substitutions
       sed \
@@ -82,7 +85,7 @@ let
         -e "s|include_dir = '/etc/postgresql-custom/conf.d'|include_dir = '@dataDir@/conf.d'|" \
         -e "\$a\\
       unix_socket_directories = '/run/postgresql'" \
-        ${ansibleConfigDir}/postgresql.conf.j2 > $out/postgresql.conf
+        ${configDir}/postgresql.conf.j2 > $out/postgresql.conf
 
       # Prepend peer auth lines to pg_hba.conf so local socket auth works in test VMs
       # (tests run as root, psql uses local socket without -h)
@@ -130,11 +133,11 @@ let
     {
       majorVersion,
       postgresPort ? defaultPort,
+      postgresPackage ? self.packages.${system}."psql_${majorVersion}/bin",
+      postgresConfig ? processAnsibleConfig { inherit majorVersion; },
     }:
     let
-      postgresPackage = self.packages.${system}."psql_${majorVersion}/bin";
       groongaPackage = self.packages.${system}.supabase-groonga;
-      processedConfig = processAnsibleConfig { inherit majorVersion; };
       dataDir = "/var/lib/postgresql/data";
       port = toString postgresPort;
 
@@ -161,17 +164,17 @@ let
 
         # Deploy processed config files with @dataDir@ substituted
         for f in postgresql.conf pg_hba.conf pg_ident.conf supautils.conf read-replica.conf; do
-          sed "s|@dataDir@|$DATA_DIR|g" ${processedConfig}/$f > "$DATA_DIR/$f"
+          sed "s|@dataDir@|$DATA_DIR|g" ${postgresConfig}/$f > "$DATA_DIR/$f"
         done
 
         # Copy conf.d directory
         rm -rf "$DATA_DIR/conf.d"
-        cp -r ${processedConfig}/conf.d "$DATA_DIR/conf.d"
+        cp -r ${postgresConfig}/conf.d "$DATA_DIR/conf.d"
         chmod -R u+w "$DATA_DIR/conf.d"
 
         # Copy extension-custom-scripts directory
         rm -rf "$DATA_DIR/extension-custom-scripts"
-        cp -r ${processedConfig}/extension-custom-scripts "$DATA_DIR/extension-custom-scripts"
+        cp -r ${postgresConfig}/extension-custom-scripts "$DATA_DIR/extension-custom-scripts"
         chmod -R u+w "$DATA_DIR/extension-custom-scripts"
 
         # Validate config
@@ -258,7 +261,7 @@ let
       networking.firewall.allowedTCPPorts = [ postgresPort ];
 
       # Make PostgreSQL available system-wide
-      environment.systemPackages = [ postgresPackage ];
+      environment.systemPackages = lib.optional (lib.isDerivation postgresPackage) postgresPackage;
 
       # PostgreSQL service (custom, bypassing services.postgresql)
       systemd.services.postgresql = {
@@ -593,5 +596,6 @@ in
     makeOrioledbSpecialisation
     expectedVersions
     defaultPort
+    migrationsDir
     ;
 }
