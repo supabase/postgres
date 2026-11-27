@@ -70,10 +70,12 @@ order by
  supabase_etl_admin      | pg_monitor               | f
  supabase_etl_admin      | pg_read_all_data         | f
  supabase_etl_admin      | supabase_privileged_role | f
+ supabase_monitor_admin  | pg_monitor               | f
+ supabase_monitor_admin  | pg_read_all_data         | f
  supabase_read_only_user | pg_monitor               | f
  supabase_read_only_user | pg_read_all_data         | f
  supabase_storage_admin  | authenticator            | f
-(25 rows)
+(27 rows)
 
 -- Check version-specific privileges of the roles on the schemas
 select schema_name, privilege_type, grantee, default_for
@@ -166,10 +168,12 @@ order by
  supabase_etl_admin      | pg_monitor               | f
  supabase_etl_admin      | pg_read_all_data         | f
  supabase_etl_admin      | supabase_privileged_role | f
+ supabase_monitor_admin  | pg_monitor               | f
+ supabase_monitor_admin  | pg_read_all_data         | f
  supabase_read_only_user | pg_monitor               | f
  supabase_read_only_user | pg_read_all_data         | f
  supabase_storage_admin  | authenticator            | f
-(24 rows)
+(26 rows)
 
 -- Check all privileges of non-superuser roles on functions
 select
@@ -182,28 +186,29 @@ cross join lateral pg_catalog.aclexplode(p.proacl) as acl
 where p.pronamespace::regnamespace::text = 'pg_catalog'
   and acl.grantee::regrole::text != 'supabase_admin'
 order by object_name, grantee, privilege_type;
-   schema   |          object_name           |      grantee      | privilege_type 
-------------+--------------------------------+-------------------+----------------
- pg_catalog | bt_index_check                 | postgres          | EXECUTE
- pg_catalog | bt_index_check                 | postgres          | EXECUTE
- pg_catalog | bt_index_check                 | postgres          | EXECUTE
- pg_catalog | bt_index_parent_check          | postgres          | EXECUTE
- pg_catalog | bt_index_parent_check          | postgres          | EXECUTE
- pg_catalog | bt_index_parent_check          | postgres          | EXECUTE
- pg_catalog | bt_index_parent_check          | postgres          | EXECUTE
- pg_catalog | pg_current_logfile             | pg_monitor        | EXECUTE
- pg_catalog | pg_current_logfile             | pg_monitor        | EXECUTE
- pg_catalog | pg_get_backend_memory_contexts | pg_read_all_stats | EXECUTE
- pg_catalog | pg_get_shmem_allocations       | pg_read_all_stats | EXECUTE
- pg_catalog | pg_ls_archive_statusdir        | pg_monitor        | EXECUTE
- pg_catalog | pg_ls_logdir                   | pg_monitor        | EXECUTE
- pg_catalog | pg_ls_logicalmapdir            | pg_monitor        | EXECUTE
- pg_catalog | pg_ls_logicalsnapdir           | pg_monitor        | EXECUTE
- pg_catalog | pg_ls_replslotdir              | pg_monitor        | EXECUTE
- pg_catalog | pg_ls_tmpdir                   | pg_monitor        | EXECUTE
- pg_catalog | pg_ls_tmpdir                   | pg_monitor        | EXECUTE
- pg_catalog | pg_ls_waldir                   | pg_monitor        | EXECUTE
- pg_catalog | pg_reload_conf                 | postgres          | EXECUTE
- pg_catalog | verify_heapam                  | postgres          | EXECUTE
-(21 rows)
+   schema   |          object_name           |        grantee         | privilege_type 
+------------+--------------------------------+------------------------+----------------
+ pg_catalog | bt_index_check                 | postgres               | EXECUTE
+ pg_catalog | bt_index_check                 | postgres               | EXECUTE
+ pg_catalog | bt_index_check                 | postgres               | EXECUTE
+ pg_catalog | bt_index_parent_check          | postgres               | EXECUTE
+ pg_catalog | bt_index_parent_check          | postgres               | EXECUTE
+ pg_catalog | bt_index_parent_check          | postgres               | EXECUTE
+ pg_catalog | bt_index_parent_check          | postgres               | EXECUTE
+ pg_catalog | pg_current_logfile             | pg_monitor             | EXECUTE
+ pg_catalog | pg_current_logfile             | pg_monitor             | EXECUTE
+ pg_catalog | pg_get_backend_memory_contexts | pg_read_all_stats      | EXECUTE
+ pg_catalog | pg_get_shmem_allocations       | pg_read_all_stats      | EXECUTE
+ pg_catalog | pg_ls_archive_statusdir        | pg_monitor             | EXECUTE
+ pg_catalog | pg_ls_logdir                   | pg_monitor             | EXECUTE
+ pg_catalog | pg_ls_logicalmapdir            | pg_monitor             | EXECUTE
+ pg_catalog | pg_ls_logicalsnapdir           | pg_monitor             | EXECUTE
+ pg_catalog | pg_ls_replslotdir              | pg_monitor             | EXECUTE
+ pg_catalog | pg_ls_tmpdir                   | pg_monitor             | EXECUTE
+ pg_catalog | pg_ls_tmpdir                   | pg_monitor             | EXECUTE
+ pg_catalog | pg_ls_waldir                   | pg_monitor             | EXECUTE
+ pg_catalog | pg_reload_conf                 | postgres               | EXECUTE
+ pg_catalog | pg_show_all_file_settings      | supabase_monitor_admin | EXECUTE
+ pg_catalog | verify_heapam                  | postgres               | EXECUTE
+(22 rows)
 
