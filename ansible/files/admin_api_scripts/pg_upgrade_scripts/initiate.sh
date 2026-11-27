@@ -29,18 +29,47 @@ PG13_EXTENSIONS_TO_DISABLE=(
 set -eEuo pipefail
 
 SCRIPT_DIR=$(dirname -- "$0")
-# shellcheck disable=SC1091
-source "$SCRIPT_DIR/common.sh"
+
+# Each attempt overwrites the log. Failed attempts are shipped before the retry.
+LOG_FILE="/var/log/pg-upgrade-initiate.log"
+touch "$LOG_FILE"
+chmod 640 "$LOG_FILE"
 
 IS_CI=${IS_CI:-}
 IS_LOCAL_UPGRADE=${IS_LOCAL_UPGRADE:-}
+
+# Truncate once (each attempt overwrites the log), then always append so the
+# foreground and the background job never fight over file offsets.
+: >"$LOG_FILE"
+
+# From here on, everything written to stdout/stderr (log messages, but also
+# errors from systemctl, install, sync, etc.) is written to the log file.
+if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
+	# Background (production) mode: nobody reads the console.
+	exec >>"$LOG_FILE" 2>&1
+else
+	# Foreground CI / local mode: keep diagnostics on the console as well.
+	exec > >(tee -a "$LOG_FILE") 2>&1
+fi
+
+# Minimal fallback so that "log" exists even if common.sh cannot be sourced.
+# common.sh redefines it with the real implementation.
+# shellcheck disable=SC2329
+log() { echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') $*"; }
+
+# Source the shared helpers (log and ship_logs functions)
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/common.sh" || {
+	log "cannot source $SCRIPT_DIR/common.sh"
+	exit 1
+}
+
 IS_NIX_UPGRADE=${IS_NIX_UPGRADE:-}
 IS_NIX_BASED_SYSTEM="false"
 
 PGVERSION=$1
 POSTGRES_SHARE_DIR="/usr/share/postgresql/${PGVERSION}"
 MOUNT_POINT="/data_migration"
-LOG_FILE="/var/log/pg-upgrade-initiate.log"
 
 POST_UPGRADE_EXTENSION_SCRIPT="/tmp/pg_upgrade/pg_upgrade_extensions.sql"
 POST_UPGRADE_POSTGRES_PERMS_SCRIPT="/tmp/pg_upgrade/pg_upgrade_postgres_perms.sql"
@@ -133,16 +162,88 @@ cleanup() {
 	# can fail under set -e, or the restart below would be refused.
 	unblock_postgres_start || log "WARNING: failed to lift the postgres start block; check /run/systemd/system/postgresql.service.d"
 
-	# ship $LOG_FILE content to reporting project (see common.sh)
-	ship_logs "$LOG_FILE" || true
-
 	if [ -d "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" ]; then
 		log "Copying pg_upgrade output to /var/log"
+
+		# Previous (failed) attempts may have left their timestamped directories in
+		# /var/log: archive them in pg_upgrade_output.d.previous/<timestamp>/ (never
+		# deleted) so that only this attempt's output is read below.
+		PG_UPGRADE_OUTPUT_DIR="/var/log/pg_upgrade_output.d"
+		PG_UPGRADE_PREVIOUS_DIR="${PG_UPGRADE_OUTPUT_DIR}.previous"
+		LAST_ARCHIVED_DIR=""
+
+		if [ -d "$PG_UPGRADE_OUTPUT_DIR" ]; then
+			mkdir -p "$PG_UPGRADE_PREVIOUS_DIR" || true
+
+			# The glob is sorted and the names are timestamps: the last directory
+			# archived is the most recent previous attempt.
+			for dir in "$PG_UPGRADE_OUTPUT_DIR"/*/; do
+				if [ -d "$dir" ]; then
+					dir="${dir%/}"
+					dest="$PG_UPGRADE_PREVIOUS_DIR/${dir##*/}"
+					# never nest into / overwrite an already archived directory
+					if [ -e "$dest" ]; then
+						dest="${dest}.$(date +%s)"
+					fi
+					# fall back to copy + remove if a plain mv fails
+					if mv "$dir" "$dest" 2>/dev/null || { cp -a "$dir" "$dest" && rm -rf "$dir"; }; then
+						LAST_ARCHIVED_DIR="$dest"
+					else
+						log "WARNING: failed to archive $dir to $dest"
+					fi
+				fi
+			done
+
+			# *.txt files at the root of pg_upgrade_output.d come from a previous
+			# attempt: attach them to the most recent archived timestamp directory
+			# (or to a dedicated dated directory if there is none, never to the
+			# root of the archive).
+			if [ -z "$LAST_ARCHIVED_DIR" ]; then
+				LAST_ARCHIVED_DIR="$PG_UPGRADE_PREVIOUS_DIR/unknown-$(date +%s)"
+				mkdir -p "$LAST_ARCHIVED_DIR" || true
+			fi
+			for file in "$PG_UPGRADE_OUTPUT_DIR"/*.txt; do
+				if [ -f "$file" ]; then
+					mv "$file" "$LAST_ARCHIVED_DIR/" || log "WARNING: failed to archive $file"
+				fi
+			done
+		fi
+
+		# Names of this attempt's timestamp directories: only these are read below,
+		# even if an older directory could not be archived and is still in place.
+		CURRENT_ATTEMPT_DIRS=()
+		for dir in "${MOUNT_POINT}"/pgdata/pg_upgrade_output.d/*/; do
+			if [ -d "$dir" ]; then
+				dir="${dir%/}"
+				CURRENT_ATTEMPT_DIRS+=("${dir##*/}")
+			fi
+		done
+
 		cp -R "${MOUNT_POINT}/pgdata/pg_upgrade_output.d/" /var/log/ || true
-		chown -R postgres:postgres /var/log/pg_upgrade_output.d/
-		chmod -R 0750 /var/log/pg_upgrade_output.d/
-		tail -n +1 /var/log/pg_upgrade_output.d/*/* >/var/log/pg_upgrade_output.d/pg_upgrade.log || true
-		ship_logs "/var/log/pg_upgrade_output.d/pg_upgrade.log" || true
+		chown -R postgres:postgres /var/log/pg_upgrade_output.d/ || true
+		chmod -R 0750 /var/log/pg_upgrade_output.d/ || true
+
+		# Layout: pg_upgrade_output.d/<timestamp>/{log,dump}/<files>. Only log/ is
+		# appended (dump/ holds the schema dumps: large and not useful in the log).
+
+		for name in "${CURRENT_ATTEMPT_DIRS[@]}"; do
+			for file in "/var/log/pg_upgrade_output.d/$name"/log/*; do
+				append_output_file "pg_upgrade_output log file" "$file" "$LOG_FILE"
+			done
+		done
+
+		# Layout: pg_upgrade_output.d/<timestamp>/*txt. Special checks during
+		# pg_upgrade will create special TXT files at the root of this directory
+		# adding them since this is useful for debugging too
+
+		for name in "${CURRENT_ATTEMPT_DIRS[@]}"; do
+			for file in "/var/log/pg_upgrade_output.d/$name"/*.txt; do
+				append_output_file "pg_upgrade_output report filename" "$file" "$LOG_FILE"
+			done
+		done
+
+		log "end of pg_upgrade outputs"
+
 	fi
 
 	log "Restarting postgresql"
@@ -219,6 +320,9 @@ on_exit() {
 		fi
 	fi
 	unblock_postgres_start || log "WARNING: failed to lift the postgres start block; check /run/systemd/system/postgresql.service.d"
+
+	# ship $LOG_FILE content to reporting project (see common.sh)
+	ship_logs "$LOG_FILE" || true
 
 	exit "$exit_code"
 }
@@ -560,10 +664,45 @@ EXTRA_NIX_CONF
 		mkdir -p "$MOUNT_POINT"
 	fi
 
+	# in prepare.sh script we copy 2 files in the /data of the TARGET
+	# to somehow 'ship them' here on the SOURCE
+	# pgsodium_root.key to be used with the pgsodium extension
+	# upgrade-reporting-credentials is the ANON jwt key used to ship_logs
+
+	# get the pgsodium_root.key from the TARGET
+	# and copy it on the SOURCE (local)
+
 	if [ -f "$MOUNT_POINT/pgsodium_root.key" ]; then
 		cp "$MOUNT_POINT/pgsodium_root.key" /etc/postgresql-custom/pgsodium_root.key
 		chown postgres:postgres /etc/postgresql-custom/pgsodium_root.key
 		chmod 640 /etc/postgresql-custom/pgsodium_root.key
+	fi
+
+	# get the upgrade-reporting-credentials.target from the TARGET
+	# and move it on the SOURCE (local) only if one is existing prior
+	# if not, delete it from the MOUNT_POINT
+
+	if [ -f "$MOUNT_POINT/upgrade-reporting-credentials.target" ]; then
+		if [ -f /root/upgrade-reporting-credentials ]; then
+			# the fresh ANON key will replace a potentially old and unvalid one
+			# preventing the logs to be shipped (curl post would then fail).
+			# Optional feature: never fail the upgrade because of it.
+			if mv -f /root/upgrade-reporting-credentials /root/upgrade-reporting-credentials.bkp &&
+				mv "$MOUNT_POINT/upgrade-reporting-credentials.target" /root/upgrade-reporting-credentials; then
+				chown root:root /root/upgrade-reporting-credentials || true
+				chmod 600 /root/upgrade-reporting-credentials || true
+				# shellcheck disable=SC2034
+				REPORTING_ANON_KEY=$(cat /root/upgrade-reporting-credentials) || true
+			else
+				log "WARNING: could not install the new reporting credentials; keeping the previous ones"
+				# restore the old key if the first mv succeeded but the second failed
+				if [ ! -f /root/upgrade-reporting-credentials ] && [ -f /root/upgrade-reporting-credentials.bkp ]; then
+					mv /root/upgrade-reporting-credentials.bkp /root/upgrade-reporting-credentials || true
+				fi
+			fi
+		else
+			rm -f "$MOUNT_POINT/upgrade-reporting-credentials.target" || true
+		fi
 	fi
 
 	log "7. Disabling extensions and generating post-upgrade script"
@@ -698,7 +837,7 @@ EOF
 
 		else
 
-			log "9.1. did *not* add checksum to SOURCE PG: size $PGDATAOLD_SIZE > 20 Gb!"
+			log "9.1. did *not* add checksums to SOURCE PG: size $PGDATAOLD_SIZE > 20 Gb!"
 
 		fi
 
@@ -768,8 +907,8 @@ trap cleanup ERR
 
 echo "running" >/tmp/pg-upgrade-status
 if [ -z "$IS_CI" ] && [ -z "$IS_LOCAL_UPGRADE" ]; then
-	initiate_upgrade >>"$LOG_FILE" 2>&1 &
-	log "Upgrade initiate job completed"
+	log "initiate.sh started"
+	initiate_upgrade &
 else
 	rm -f /tmp/pg-upgrade-status
 	initiate_upgrade
