@@ -41,8 +41,14 @@ file:
     owner: postgres
     group: postgres
     mode: "0775"
-  # Note: platform-defaults.conf, pgsodium_root.key, custom-overrides.conf, and
+  # Note: pgsodium_root.key, custom-overrides.conf, and
   # generated-optimizations.conf are created at deploy time (not during AMI build)
+  /etc/postgresql-custom/platform-defaults.conf:
+    exists: true
+    filetype: file
+    owner: postgres
+    group: postgres
+    mode: "0644"
   /etc/postgresql-custom/supautils.conf:
     exists: true
     filetype: file
