@@ -100,7 +100,7 @@ in
   # OrioleDB support + backward-compat validation; binary is wal-g-3.
   wal-g-3 = walGCommon {
     # renovate: datasource=github-tags depName=wal-g-3 packageName=wal-g/wal-g extractVersion=^v(?<version>.+)$
-    version = "3.0.9";
+    version = "3.0.10";
     sha256 = "sha256-QTPgJuCuLxlBqa2QAhV91qX4XTQHIvzAQDntchGpxrQ=";
     vendorHash = "sha256-m+X6WIdBjMU88tgwkS46lL6YwyGB0FoO3aCXCAUQzpo=";
     majorVersion = "3";
