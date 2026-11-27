@@ -4,7 +4,7 @@ let
   goss = pkgs.buildGoModule rec {
     pname = "goss";
     # renovate: datasource=github-tags depName=goss packageName=goss-org/goss extractVersion=^v(?<version>.+)$
-    version = "0.4.8";
+    version = "0.4.10";
     src = pkgs.fetchFromGitHub {
       owner = "goss-org";
       repo = "goss";
