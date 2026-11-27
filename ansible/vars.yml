@@ -114,14 +114,14 @@ salt_release: "3007.17" # keep this as an *explicit* string, otherwise gets trea
 salt_artifacts:
   url: https://packages.broadcom.com/artifactory/api/security/keypair/SaltProjectKey/public
   checksum: sha256:36decef986477acb8ba2a1fc4041bcf9f22229ef6c939d0317c9e36a9d142b34
-supabase_admin_agent_release: 1.19.3
+supabase_admin_agent_release: 1.20.1
 supabase_admin_agent_artifacts:
   amd64:
     url: https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-agent/v{{ supabase_admin_agent_release }}/supabase-admin-agent-{{ supabase_admin_agent_release }}-linux-amd64.tar.gz
-    checksum: sha256:5edac916486edc4a35eba3885022b282c70531849b3d4a73c12c24f1017bfe62
+    checksum: sha256:302c945fa63f77086e392c1d214f02ddcf8b59d4075c12006a77de4a889c8d96
   arm64:
     url: https://supabase-public-artifacts-bucket.s3.amazonaws.com/supabase-admin-agent/v{{ supabase_admin_agent_release }}/supabase-admin-agent-{{ supabase_admin_agent_release }}-linux-arm64.tar.gz
-    checksum: sha256:b7eb2f3d94a22c47f7d5ee309f9a3841fd7b41f6df5ab9c071f56935365e21e1
+    checksum: sha256:9cee79003092cc3df9f4a39b0dcf2d7a292abcf6e364cd7d4233b0418e975d77
 vector_release: 0.48.0-1
 vector_artifacts:
   amd64:
