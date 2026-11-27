@@ -13,6 +13,7 @@ permissions:
   # required by testinfra-ami-build dependent workflows
   contents: write
   packages: write
+  pull-requests: write
   # version-diff downloads the base commit's drvPaths from its merge queue run
   actions: read
 
