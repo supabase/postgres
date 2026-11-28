@@ -11,7 +11,7 @@
     flake-utils.url = "github:numtide/flake-utils";
     git-hooks.inputs.nixpkgs.follows = "nixpkgs";
     git-hooks.url = "github:cachix/git-hooks.nix";
-    multigres.url = "github:multigres/multigres/08b06091344a58f15c48c87f19e4aac85c43ee06"; # commit is updated by renovate
+    multigres.url = "github:multigres/multigres/b73d9f405d99d5d7830469d8a075523e9291f059"; # commit is updated by renovate
     multigres.flake = false;
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
     nix-darwin.url = "github:nix-darwin/nix-darwin";
