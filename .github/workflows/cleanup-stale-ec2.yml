@@ -96,7 +96,7 @@ jobs:
           ci/build-slack-payload.sh summaries/*/summary.txt | tee "$RUNNER_TEMP/payload.json"
 
       - name: Slack Notification
-        uses: slackapi/slack-github-action@v4.0.0
+        uses: slackapi/slack-github-action@v4.1.0
         with:
           webhook: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
           webhook-type: incoming-webhook

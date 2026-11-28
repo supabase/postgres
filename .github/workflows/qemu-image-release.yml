@@ -109,7 +109,7 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - name: Slack Notification on Failure
-        uses: slackapi/slack-github-action@v4.0.0
+        uses: slackapi/slack-github-action@v4.1.0
         with:
           webhook: ${{ secrets.SLACK_NOTIFICATIONS_WEBHOOK }}
           webhook-type: incoming-webhook
